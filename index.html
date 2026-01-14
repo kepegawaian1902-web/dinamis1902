@@ -49,7 +49,6 @@
             pointer-events: none;
         }
 
-        /* Glassmorphism for Modal */
         .glass-modal {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(12px);
@@ -86,15 +85,6 @@
         </div>
     </div>
 
-    <!-- Konfigurasi Warning -->
-    <div id="setupWarning" class="fixed top-4 left-4 right-4 z-[200] bg-amber-500 text-white p-4 rounded-2xl shadow-xl flex items-center justify-between hidden">
-        <div class="flex items-center gap-3">
-            <i data-lucide="help-circle"></i>
-            <p class="text-xs font-bold">Gagal mengambil data. Pastikan URL Script benar.</p>
-        </div>
-        <button onclick="this.parentElement.remove()" class="p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
-    </div>
-
     <!-- Success Overlay -->
     <div id="successOverlay" class="fixed inset-0 z-[100] hidden flex flex-col items-center justify-center bg-white/95 backdrop-blur-xl">
         <div class="relative text-center space-y-8 p-12">
@@ -109,7 +99,6 @@
 
     <!-- FLOATING ADMIN BUTTON -->
     <div class="fixed bottom-6 right-6 z-[150] flex flex-col items-end gap-3">
-        <!-- Menu Ekspansi (Awalnya tersembunyi) -->
         <div id="adminFabMenu" class="fab-hidden admin-fab-menu flex flex-col gap-3 mb-2">
             <button onclick="downloadReport()" class="flex items-center gap-3 bg-white text-indigo-600 font-bold px-6 py-3 rounded-2xl shadow-2xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all group">
                 <span class="text-sm uppercase tracking-tight">Unduh Rekap</span>
@@ -117,10 +106,10 @@
                     <i data-lucide="download" class="w-5 h-5"></i>
                 </div>
             </button>
-            <button onclick="resetDisplayOnly()" class="flex items-center gap-3 bg-white text-rose-600 font-bold px-6 py-3 rounded-2xl shadow-2xl border border-rose-100 hover:bg-rose-600 hover:text-white transition-all group">
-                <span class="text-sm uppercase tracking-tight">Reset Layar</span>
-                <div class="w-10 h-10 flex items-center justify-center bg-rose-50 group-hover:bg-rose-500 group-hover:text-white rounded-xl transition-colors">
-                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+            <button onclick="openDatabase()" class="flex items-center gap-3 bg-emerald-50 text-emerald-600 font-bold px-6 py-3 rounded-2xl shadow-2xl border border-emerald-200 hover:bg-emerald-600 hover:text-white transition-all group">
+                <span class="text-sm uppercase tracking-tight">Akses Database</span>
+                <div class="w-10 h-10 flex items-center justify-center bg-emerald-100 group-hover:bg-emerald-500 group-hover:text-white rounded-xl transition-colors">
+                    <i data-lucide="database" class="w-5 h-5"></i>
                 </div>
             </button>
             <button onclick="lockAdmin()" class="flex items-center gap-3 bg-slate-900 text-white font-bold px-6 py-3 rounded-2xl shadow-2xl hover:bg-black transition-all group">
@@ -131,7 +120,6 @@
             </button>
         </div>
         
-        <!-- Tombol Utama (FAB) -->
         <button id="mainFab" onclick="handleFabClick()" class="w-16 h-16 bg-slate-950 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group">
             <i id="fabIcon" data-lucide="lock" class="group-hover:rotate-12 transition-transform"></i>
         </button>
@@ -139,8 +127,6 @@
 
     <!-- MAIN APP CONTAINER -->
     <div class="max-w-5xl mx-auto px-6 pt-12 md:pt-20 space-y-16">
-        
-        <!-- Header -->
         <header class="text-center space-y-6">
             <div class="space-y-2">
                 <div class="inline-block relative">
@@ -151,7 +137,6 @@
             </div>
         </header>
 
-        <!-- Polling Section -->
         <section id="pollingView" class="bg-white p-8 md:p-16 rounded-[4rem] shadow-2xl shadow-indigo-900/5 border border-white relative overflow-hidden">
             <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full -mr-32 -mt-32 opacity-50"></div>
             <div class="relative z-10 space-y-12">
@@ -161,19 +146,12 @@
                         <p class="text-slate-500 font-bold text-base md:text-xl flex items-center gap-2">
                             <span>Cukup singkat ✍️, santai 😊, dan anonim 🔒</span>
                         </p>
-                        <p class="text-indigo-600 font-semibold text-sm md:text-base italic">
-                            Partisipasi kamu bantu kita jaga ritme kerja bersama 🤝
-                        </p>
                     </div>
                 </div>
-
-                <div id="moodGrid" class="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6">
-                    <!-- JS rendered cards -->
-                </div>
+                <div id="moodGrid" class="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6"></div>
             </div>
         </section>
 
-        <!-- Voted State -->
         <section id="votedView" class="hidden bg-indigo-600 p-10 md:p-16 rounded-[4rem] text-white flex flex-col md:flex-row items-center justify-between gap-10 shadow-2xl shadow-indigo-600/30">
             <div class="space-y-4 text-center md:text-left">
                 <h3 class="text-4xl font-black italic uppercase tracking-tighter leading-none">Selesai!</h3>
@@ -208,7 +186,6 @@
             </div>
         </div>
 
-        <!-- Analytics -->
         <section class="bg-white p-10 md:p-16 rounded-[4rem] shadow-2xl shadow-indigo-900/5 border border-white">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                 <div class="flex items-center gap-6">
@@ -218,8 +195,6 @@
                         <p class="text-sm font-bold text-slate-400 italic">Distribusi polling pegawai minggu ini</p>
                     </div>
                 </div>
-
-                <!-- Chart Toggle -->
                 <div class="flex items-center bg-slate-100 p-1.5 rounded-2xl border border-slate-200 self-start md:self-center">
                     <button onclick="setChartType('bar')" id="btnChartBar" class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-tighter transition-all chart-toggle-active">
                         <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
@@ -235,11 +210,12 @@
                 <canvas id="moodChart"></canvas>
             </div>
         </section>
-
     </div>
 
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_gy-pVOg7AqWvw840omAufQ1tuzyGpfTLhbBabtKTrycVvOX8T7dTSq-o_v1ORfBr/exec";
+        // Masukkan URL Google Sheets Anda di sini untuk tombol Akses Database
+        const SHEET_URL = "https://docs.google.com/spreadsheets/d/1g2WfB6j6pEHc0q4iAb2FhSh_9QgWV42INagNuCVaiYU/edit?pli=1&gid=0#gid=0";
 
         const MOOD_OPTIONS = [
             { id: 'excited', label: 'Semangat', emoji: '🤩', color: '#FBBF24' },
@@ -250,7 +226,7 @@
         ];
 
         let chartInstance = null;
-        let chartType = 'bar'; // default type
+        let chartType = 'bar';
         let lastStatsData = { total: 0, counts: {} };
         let isAdminUnlocked = false;
         let isFabMenuOpen = false;
@@ -259,7 +235,6 @@
             lucide.createIcons();
             renderMoodCards();
             refreshData(); 
-            
             document.getElementById('adminPasswordInput').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') checkAdminPassword();
             });
@@ -320,7 +295,6 @@
                 updateChart(stats.counts || {});
             } catch (err) {
                 console.error("Gagal ambil data:", err);
-                document.getElementById('setupWarning').classList.remove('hidden');
                 updateChart({});
             }
         }
@@ -328,11 +302,8 @@
         function setChartType(type) {
             if (chartType === type) return;
             chartType = type;
-            
-            // Toggle UI classes
             const barBtn = document.getElementById('btnChartBar');
             const pieBtn = document.getElementById('btnChartPie');
-            
             if (type === 'bar') {
                 barBtn.classList.add('chart-toggle-active');
                 barBtn.classList.remove('text-slate-500');
@@ -344,7 +315,6 @@
                 barBtn.classList.remove('chart-toggle-active');
                 barBtn.classList.add('text-slate-500');
             }
-            
             updateChart(lastStatsData.counts || {});
         }
 
@@ -353,7 +323,6 @@
             if (!chartCanvas) return;
             const ctx = chartCanvas.getContext('2d');
             const dataValues = MOOD_OPTIONS.map(m => counts[m.id] || 0);
-
             if (chartInstance) chartInstance.destroy();
 
             const chartConfig = {
@@ -375,16 +344,11 @@
                         legend: { 
                             display: chartType === 'pie',
                             position: 'bottom',
-                            labels: {
-                                font: { weight: 'bold', family: "'Plus Jakarta Sans'" },
-                                padding: 20
-                            }
+                            labels: { font: { weight: 'bold', family: "'Plus Jakarta Sans'" }, padding: 20 }
                         },
                         tooltip: {
                             backgroundColor: '#0f172a',
                             padding: 12,
-                            titleFont: { size: 14, weight: 'bold' },
-                            bodyFont: { size: 13 },
                             callbacks: {
                                 label: function(context) {
                                     const total = dataValues.reduce((a, b) => a + b, 0);
@@ -397,8 +361,6 @@
                     }
                 }
             };
-
-            // Custom scale config for Bar Chart only
             if (chartType === 'bar') {
                 chartConfig.options.scales = {
                     y: { beginAtZero: true, ticks: { stepSize: 1, color: '#94a3b8' } },
@@ -406,16 +368,13 @@
                 };
                 chartConfig.data.datasets[0].borderRadius = 12;
             }
-
             chartInstance = new Chart(ctx, chartConfig);
         }
 
+        // Admin Logic
         function handleFabClick() {
-            if (!isAdminUnlocked) {
-                openPasswordModal();
-            } else {
-                toggleFabMenu();
-            }
+            if (!isAdminUnlocked) openPasswordModal();
+            else toggleFabMenu();
         }
 
         function openPasswordModal() {
@@ -431,14 +390,12 @@
 
         function checkAdminPassword() {
             const input = document.getElementById('adminPasswordInput');
-            const error = document.getElementById('passwordError');
-            
             if (input.value === "dinamis1902") {
                 isAdminUnlocked = true;
                 closePasswordModal();
                 unlockAdminUI();
             } else {
-                error.classList.remove('hidden');
+                document.getElementById('passwordError').classList.remove('hidden');
                 input.value = '';
                 input.focus();
             }
@@ -447,40 +404,38 @@
         function unlockAdminUI() {
             const icon = document.getElementById('fabIcon');
             const fab = document.getElementById('mainFab');
-            
             icon.setAttribute('data-lucide', 'settings');
-            fab.classList.remove('bg-slate-950');
-            fab.classList.add('bg-indigo-600');
+            fab.classList.replace('bg-slate-950', 'bg-indigo-600');
             lucide.createIcons();
-            
             toggleFabMenu(); 
         }
 
         function toggleFabMenu() {
             const menu = document.getElementById('adminFabMenu');
             isFabMenuOpen = !isFabMenuOpen;
-            
-            if (isFabMenuOpen) {
-                menu.classList.remove('fab-hidden');
-                document.getElementById('fabIcon').style.transform = 'rotate(90deg)';
-            } else {
-                menu.classList.add('fab-hidden');
-                document.getElementById('fabIcon').style.transform = 'rotate(0deg)';
-            }
+            menu.classList.toggle('fab-hidden', !isFabMenuOpen);
+            document.getElementById('fabIcon').style.transform = isFabMenuOpen ? 'rotate(90deg)' : 'rotate(0deg)';
         }
 
         function lockAdmin() {
             isAdminUnlocked = false;
             isFabMenuOpen = false;
             document.getElementById('adminFabMenu').classList.add('fab-hidden');
-            
             const icon = document.getElementById('fabIcon');
             const fab = document.getElementById('mainFab');
-            
             icon.setAttribute('data-lucide', 'lock');
-            fab.classList.remove('bg-indigo-600');
-            fab.classList.add('bg-slate-950');
+            fab.classList.replace('bg-indigo-600', 'bg-slate-950');
             lucide.createIcons();
+        }
+
+        // AKses Database
+        function openDatabase() {
+            if (SHEET_URL && SHEET_URL.startsWith('http')) {
+                window.open(SHEET_URL, '_blank');
+            } else {
+                alert("URL Database belum dikonfigurasi.");
+            }
+            toggleFabMenu();
         }
 
         function downloadReport() {
@@ -494,25 +449,12 @@
                 const pct = ((count / lastStatsData.total) * 100).toFixed(2);
                 return `${m.label},${count},${pct}%`;
             }).join("\n");
-            const csvContent = "data:text/csv;charset=utf-8," + header + rows + `\nTotal,${lastStatsData.total},100%`;
-            const encodedUri = encodeURI(csvContent);
+            const csvContent = "data:text/csv;charset=utf-8," + header + rows;
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `rekap_mood_bps_${new Date().toLocaleDateString()}.csv`);
-            document.body.appendChild(link);
+            link.setAttribute("href", encodeURI(csvContent));
+            link.setAttribute("download", `rekap_bps_${new Date().toLocaleDateString()}.csv`);
             link.click();
-            document.body.removeChild(link);
             toggleFabMenu(); 
-        }
-
-        function resetDisplayOnly() {
-            if (confirm("Reset tampilan hanya akan mengosongkan grafik di browser Anda. Lanjutkan?")) {
-                updateChart({});
-                document.getElementById('statTotalVotes').innerText = "0";
-                document.getElementById('statLastUpdate').innerText = "Direset (Lokal)";
-                lastStatsData = { total: 0, counts: {} };
-                toggleFabMenu();
-            }
         }
     </script>
 </body>
