@@ -46,6 +46,14 @@
 </head>
 <body class="text-slate-900 pb-20 relative min-h-screen header-gradient">
 
+    <!-- Error Fallback Message (Hidden by default) -->
+    <div id="configError" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center bg-slate-900 text-white p-6 text-center">
+        <i data-lucide="alert-triangle" class="w-16 h-16 text-amber-500 mb-4"></i>
+        <h2 class="text-2xl font-black mb-2">Konfigurasi Firebase Tidak Ditemukan</h2>
+        <p class="text-slate-400 max-w-md mb-6">Aplikasi ini memerlukan Firebase Config untuk berjalan. Jika Anda menghosting sendiri, pastikan variabel <code class="bg-slate-800 px-2 py-1 rounded">__firebase_config</code> sudah terisi.</p>
+        <button onclick="location.reload()" class="px-6 py-3 bg-indigo-600 rounded-xl font-bold">Coba Lagi</button>
+    </div>
+
     <!-- Success Overlay -->
     <div id="successOverlay" class="fixed inset-0 z-[100] hidden flex flex-col items-center justify-center bg-white/95 backdrop-blur-xl">
         <div class="relative text-center space-y-8 p-12">
@@ -209,216 +217,230 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, Timestamp, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'dinamis-bps-v1';
-
-        const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxrjMJEWBeTNX5uNUsekXjnh6UUlsAIp4G8EiRjg-ESAnTpDfgt3W5Ah51UzQaoOYfl/exec";
-
-        const MOOD_OPTIONS = [
-            { id: 'excited', label: 'Semangat', emoji: '🤩', color: '#FBBF24', desc: 'Sangat Produktif' },
-            { id: 'good', label: 'Senang', emoji: '😊', color: '#10B981', desc: 'Berjalan Lancar' },
-            { id: 'neutral', label: 'Biasa', emoji: '😐', color: '#64748B', desc: 'Standar Saja' },
-            { id: 'tired', label: 'Lelah', emoji: '😫', color: '#3B82F6', desc: 'Butuh Istirahat' },
-            { id: 'burnout', label: 'Stress', emoji: '🤯', color: '#EF4444', desc: 'Overload Kerja' }
-        ];
-
-        let votes = [];
-        let chartInstance = null;
-        let activeChartType = 'bar';
-        let currentUser = null;
-
-        window.onload = () => {
-            lucide.createIcons();
-            renderMoodCards();
-            initAuth();
+        // Global check to prevent crash if __firebase_config is missing
+        const checkConfig = () => {
+            if (typeof __firebase_config === 'undefined') {
+                document.getElementById('configError').classList.remove('hidden');
+                lucide.createIcons();
+                return null;
+            }
+            return JSON.parse(__firebase_config);
         };
 
-        async function initAuth() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                
-                onAuthStateChanged(auth, (u) => {
-                    if (u) {
-                        currentUser = u;
-                        startRealtimeSync();
-                    }
-                });
-            } catch (err) {
-                console.error("Auth error:", err);
-            }
-        }
+        const firebaseConfig = checkConfig();
+        
+        // Only initialize if config exists
+        if (firebaseConfig) {
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'dinamis-bps-v1';
 
-        function renderMoodCards() {
-            const container = document.getElementById('moodGrid');
-            if (!container) return;
-            container.innerHTML = MOOD_OPTIONS.map(m => `
-                <button onclick="voteMood('${m.id}')" class="mood-card group flex flex-col items-center justify-center p-8 md:p-10 rounded-[2.5rem] bg-slate-50 border-2 border-slate-100 hover:bg-white hover:border-indigo-500 hover:shadow-2xl transition-all">
-                    <span class="text-6xl md:text-7xl mb-6 group-hover:scale-125 transition-transform duration-500">${m.emoji}</span>
-                    <div class="text-center">
-                        <span class="block text-sm md:text-base font-black text-slate-800 uppercase tracking-tighter">${m.label}</span>
-                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">${m.desc}</span>
-                    </div>
-                </button>
-            `).join('');
-        }
+            const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxrjMJEWBeTNX5uNUsekXjnh6UUlsAIp4G8EiRjg-ESAnTpDfgt3W5Ah51UzQaoOYfl/exec";
 
-        window.voteMood = async (moodId) => {
-            if (!currentUser) return;
-            const mood = MOOD_OPTIONS.find(m => m.id === moodId);
-            document.getElementById('successEmojiDisplay').innerText = mood.emoji;
-            document.getElementById('successOverlay').classList.remove('hidden');
+            const MOOD_OPTIONS = [
+                { id: 'excited', label: 'Semangat', emoji: '🤩', color: '#FBBF24', desc: 'Sangat Produktif' },
+                { id: 'good', label: 'Senang', emoji: '😊', color: '#10B981', desc: 'Berjalan Lancar' },
+                { id: 'neutral', label: 'Biasa', emoji: '😐', color: '#64748B', desc: 'Standar Saja' },
+                { id: 'tired', label: 'Lelah', emoji: '😫', color: '#3B82F6', desc: 'Butuh Istirahat' },
+                { id: 'burnout', label: 'Stress', emoji: '🤯', color: '#EF4444', desc: 'Overload Kerja' }
+            ];
 
-            const voteData = {
-                moodId: mood.id,
-                label: mood.label,
-                emoji: mood.emoji,
-                userId: currentUser.uid,
-                timestamp: new Date().toISOString()
+            let votes = [];
+            let chartInstance = null;
+            let activeChartType = 'bar';
+            let currentUser = null;
+
+            window.onload = () => {
+                lucide.createIcons();
+                renderMoodCards();
+                initAuth();
             };
 
-            try {
-                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'mood_votes');
-                await addDoc(colRef, { ...voteData, timestamp: Timestamp.now() });
-
-                fetch(GOOGLE_SHEETS_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify(voteData)
-                }).catch(() => {});
-
-                setTimeout(() => {
-                    document.getElementById('successOverlay').classList.add('hidden');
-                    switchView('voted');
-                    document.getElementById('votedEmojiDisplay').innerText = mood.emoji;
-                }, 1800);
-            } catch (err) {
-                console.error("Save error:", err);
-                document.getElementById('successOverlay').classList.add('hidden');
-            }
-        };
-
-        function startRealtimeSync() {
-            if (!currentUser) return;
-            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'mood_votes');
-            const q = query(colRef);
-            onSnapshot(q, (snapshot) => {
-                votes = snapshot.docs.map(doc => doc.data());
-                updateDashboard();
-            }, (error) => console.error(error));
-        }
-
-        function updateDashboard() {
-            const totalEl = document.getElementById('statTotalVotes');
-            const dominantEl = document.getElementById('statDominant');
-            if (totalEl) totalEl.innerText = votes.length;
-            if (votes.length > 0 && dominantEl) {
-                const counts = MOOD_OPTIONS.map(m => votes.filter(v => v.moodId === m.id).length);
-                const dominantIndex = counts.indexOf(Math.max(...counts));
-                dominantEl.innerText = MOOD_OPTIONS[dominantIndex].label;
-            } else if (dominantEl) {
-                dominantEl.innerText = "-";
-            }
-            renderChart();
-        }
-
-        function renderChart() {
-            const chartCanvas = document.getElementById('moodChart');
-            if (!chartCanvas) return;
-            const ctx = chartCanvas.getContext('2d');
-            const data = MOOD_OPTIONS.map(m => votes.filter(v => v.moodId === m.id).length);
-            if (chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, {
-                type: activeChartType,
-                data: {
-                    labels: MOOD_OPTIONS.map(m => m.label),
-                    datasets: [{
-                        data: data,
-                        backgroundColor: MOOD_OPTIONS.map(m => m.color),
-                        borderWidth: 0,
-                        borderRadius: activeChartType === 'bar' ? 12 : 0,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: activeChartType === 'pie', position: 'bottom' } },
-                    scales: activeChartType === 'bar' ? { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } } : {}
+            async function initAuth() {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    
+                    onAuthStateChanged(auth, (u) => {
+                        if (u) {
+                            currentUser = u;
+                            startRealtimeSync();
+                        }
+                    });
+                } catch (err) {
+                    console.error("Auth error:", err);
                 }
-            });
+            }
+
+            function renderMoodCards() {
+                const container = document.getElementById('moodGrid');
+                if (!container) return;
+                container.innerHTML = MOOD_OPTIONS.map(m => `
+                    <button onclick="voteMood('${m.id}')" class="mood-card group flex flex-col items-center justify-center p-8 md:p-10 rounded-[2.5rem] bg-slate-50 border-2 border-slate-100 hover:bg-white hover:border-indigo-500 hover:shadow-2xl transition-all">
+                        <span class="text-6xl md:text-7xl mb-6 group-hover:scale-125 transition-transform duration-500">${m.emoji}</span>
+                        <div class="text-center">
+                            <span class="block text-sm md:text-base font-black text-slate-800 uppercase tracking-tighter">${m.label}</span>
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">${m.desc}</span>
+                        </div>
+                    </button>
+                `).join('');
+            }
+
+            window.voteMood = async (moodId) => {
+                if (!currentUser) return;
+                const mood = MOOD_OPTIONS.find(m => m.id === moodId);
+                document.getElementById('successEmojiDisplay').innerText = mood.emoji;
+                document.getElementById('successOverlay').classList.remove('hidden');
+
+                const voteData = {
+                    moodId: mood.id,
+                    label: mood.label,
+                    emoji: mood.emoji,
+                    userId: currentUser.uid,
+                    timestamp: new Date().toISOString()
+                };
+
+                try {
+                    const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'mood_votes');
+                    await addDoc(colRef, { ...voteData, timestamp: Timestamp.now() });
+
+                    fetch(GOOGLE_SHEETS_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: JSON.stringify(voteData)
+                    }).catch(() => {});
+
+                    setTimeout(() => {
+                        document.getElementById('successOverlay').classList.add('hidden');
+                        switchView('voted');
+                        document.getElementById('votedEmojiDisplay').innerText = mood.emoji;
+                    }, 1800);
+                } catch (err) {
+                    console.error("Save error:", err);
+                    document.getElementById('successOverlay').classList.add('hidden');
+                }
+            };
+
+            function startRealtimeSync() {
+                if (!currentUser) return;
+                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'mood_votes');
+                const q = query(colRef);
+                onSnapshot(q, (snapshot) => {
+                    votes = snapshot.docs.map(doc => doc.data());
+                    updateDashboard();
+                }, (error) => console.error(error));
+            }
+
+            function updateDashboard() {
+                const totalEl = document.getElementById('statTotalVotes');
+                const dominantEl = document.getElementById('statDominant');
+                if (totalEl) totalEl.innerText = votes.length;
+                if (votes.length > 0 && dominantEl) {
+                    const counts = MOOD_OPTIONS.map(m => votes.filter(v => v.moodId === m.id).length);
+                    const dominantIndex = counts.indexOf(Math.max(...counts));
+                    dominantEl.innerText = MOOD_OPTIONS[dominantIndex].label;
+                } else if (dominantEl) {
+                    dominantEl.innerText = "-";
+                }
+                renderChart();
+            }
+
+            function renderChart() {
+                const chartCanvas = document.getElementById('moodChart');
+                if (!chartCanvas) return;
+                const ctx = chartCanvas.getContext('2d');
+                const data = MOOD_OPTIONS.map(m => votes.filter(v => v.moodId === m.id).length);
+                if (chartInstance) chartInstance.destroy();
+                chartInstance = new Chart(ctx, {
+                    type: activeChartType,
+                    data: {
+                        labels: MOOD_OPTIONS.map(m => m.label),
+                        datasets: [{
+                            data: data,
+                            backgroundColor: MOOD_OPTIONS.map(m => m.color),
+                            borderWidth: 0,
+                            borderRadius: activeChartType === 'bar' ? 12 : 0,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: activeChartType === 'pie', position: 'bottom' } },
+                        scales: activeChartType === 'bar' ? { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } } : {}
+                    }
+                });
+            }
+
+            window.switchView = (view) => {
+                const poll = document.getElementById('pollingView');
+                const vote = document.getElementById('votedView');
+                if (view === 'polling') {
+                    poll.classList.remove('hidden');
+                    vote.classList.add('hidden');
+                } else {
+                    poll.classList.add('hidden');
+                    vote.classList.remove('hidden');
+                }
+            };
+
+            window.changeChartType = (type) => {
+                activeChartType = type;
+                const bBar = document.getElementById('btnBar');
+                const bPie = document.getElementById('btnPie');
+                if (type === 'bar') {
+                    bBar.className = 'p-4 rounded-xl bg-white shadow-lg text-indigo-600';
+                    bPie.className = 'p-4 rounded-xl text-slate-400';
+                } else {
+                    bPie.className = 'p-4 rounded-xl bg-white shadow-lg text-indigo-600';
+                    bBar.className = 'p-4 rounded-xl text-slate-400';
+                }
+                renderChart();
+            };
+
+            window.toggleAdminModal = (show) => {
+                const modal = document.getElementById('adminModal');
+                if (show) modal.classList.remove('hidden');
+                else modal.classList.add('hidden');
+            };
+
+            window.handleAdminLogin = (e) => {
+                e.preventDefault();
+                if (document.getElementById('adminPassword').value === 'dinamis1902') {
+                    document.getElementById('adminLoginForm').classList.add('hidden');
+                    document.getElementById('adminDashboard').classList.remove('hidden');
+                    lucide.createIcons();
+                } else {
+                    const err = document.getElementById('loginError');
+                    err.classList.remove('hidden');
+                    setTimeout(() => err.classList.add('hidden'), 2000);
+                }
+            };
+
+            window.exportCSV = () => {
+                if (votes.length === 0) return;
+                const csvRows = [['Mood', 'Emoji', 'Timestamp', 'UserID'], ...votes.map(v => [v.label, v.emoji, v.timestamp, v.userId])];
+                const blob = new Blob([csvRows.map(r => r.join(',')).join('\n')], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'rekap_mood_bps.csv';
+                a.click();
+            };
+
+            window.resetData = async () => {
+                if (!currentUser || !confirm("Hapus semua data polling?")) return;
+                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'mood_votes');
+                const snap = await getDocs(colRef);
+                const batch = writeBatch(db);
+                snap.docs.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+                location.reload();
+            };
         }
-
-        window.switchView = (view) => {
-            const poll = document.getElementById('pollingView');
-            const vote = document.getElementById('votedView');
-            if (view === 'polling') {
-                poll.classList.remove('hidden');
-                vote.classList.add('hidden');
-            } else {
-                poll.classList.add('hidden');
-                vote.classList.remove('hidden');
-            }
-        };
-
-        window.changeChartType = (type) => {
-            activeChartType = type;
-            const bBar = document.getElementById('btnBar');
-            const bPie = document.getElementById('btnPie');
-            if (type === 'bar') {
-                bBar.className = 'p-4 rounded-xl bg-white shadow-lg text-indigo-600';
-                bPie.className = 'p-4 rounded-xl text-slate-400';
-            } else {
-                bPie.className = 'p-4 rounded-xl bg-white shadow-lg text-indigo-600';
-                bBar.className = 'p-4 rounded-xl text-slate-400';
-            }
-            renderChart();
-        };
-
-        window.toggleAdminModal = (show) => {
-            const modal = document.getElementById('adminModal');
-            if (show) modal.classList.remove('hidden');
-            else modal.classList.add('hidden');
-        };
-
-        window.handleAdminLogin = (e) => {
-            e.preventDefault();
-            if (document.getElementById('adminPassword').value === 'dinamis1902') {
-                document.getElementById('adminLoginForm').classList.add('hidden');
-                document.getElementById('adminDashboard').classList.remove('hidden');
-                lucide.createIcons();
-            } else {
-                const err = document.getElementById('loginError');
-                err.classList.remove('hidden');
-                setTimeout(() => err.classList.add('hidden'), 2000);
-            }
-        };
-
-        window.exportCSV = () => {
-            if (votes.length === 0) return;
-            const csvRows = [['Mood', 'Emoji', 'Timestamp', 'UserID'], ...votes.map(v => [v.label, v.emoji, v.timestamp, v.userId])];
-            const blob = new Blob([csvRows.map(r => r.join(',')).join('\n')], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'rekap_mood_bps.csv';
-            a.click();
-        };
-
-        window.resetData = async () => {
-            if (!currentUser || !confirm("Hapus semua data polling?")) return;
-            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'mood_votes');
-            const snap = await getDocs(colRef);
-            const batch = writeBatch(db);
-            snap.docs.forEach(doc => batch.delete(doc.ref));
-            await batch.commit();
-            location.reload();
-        };
     </script>
 </body>
 </html>
