@@ -60,13 +60,18 @@
             color: white;
             box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
         }
+
+        .credit-line {
+            height: 1px;
+            background: linear-gradient(to right, transparent, #e2e8f0, transparent);
+        }
     </style>
 </head>
 <body class="text-slate-900 pb-20 relative min-h-screen header-gradient">
 
     <!-- Password Modal -->
     <div id="passwordModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
-        <div class="glass-modal w-full max-w-sm p-8 rounded-[2.5rem] shadow-2xl space-y-6">
+        <div class="glass-modal w-full max-sm p-8 rounded-[2.5rem] shadow-2xl space-y-6">
             <div class="text-center space-y-2">
                 <div class="w-16 h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg rotate-3 mb-4">
                     <i data-lucide="shield-lock" class="w-8 h-8"></i>
@@ -91,7 +96,8 @@
             <div id="successEmojiDisplay" class="text-9xl animate-float drop-shadow-2xl">🤩</div>
             <div class="space-y-3">
                 <h3 class="text-4xl font-black text-slate-900 tracking-tighter italic uppercase">BERHASIL!</h3>
-                <p class="text-slate-500 font-bold text-lg text-sync-status">Menyimpan ke Google Sheets...</p>
+                <!-- Teks diperbarui di sini -->
+                <p class="text-slate-500 font-bold text-lg text-sync-status">Menyimpan ke Database...</p>
             </div>
             <div class="w-16 h-1 bg-emerald-500 mx-auto rounded-full"></div>
         </div>
@@ -210,11 +216,20 @@
                 <canvas id="moodChart"></canvas>
             </div>
         </section>
+
+        <!-- Minimalist Credit Footer -->
+        <footer class="pt-10 pb-20 text-center space-y-4">
+            <div class="credit-line max-w-xs mx-auto opacity-20"></div>
+            <div class="flex flex-col items-center">
+                <p class="text-sm font-black text-slate-800 tracking-widest uppercase italic">BPS Kabupaten Belitung</p>
+                <p class="mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Tim Zona Integritas</p>
+                <p class="mt-4 text-[9px] font-medium text-slate-300 uppercase tracking-widest">© 2026</p>
+            </div>
+        </footer>
     </div>
 
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_gy-pVOg7AqWvw840omAufQ1tuzyGpfTLhbBabtKTrycVvOX8T7dTSq-o_v1ORfBr/exec";
-        // Masukkan URL Google Sheets Anda di sini untuk tombol Akses Database
         const SHEET_URL = "https://docs.google.com/spreadsheets/d/1g2WfB6j6pEHc0q4iAb2FhSh_9QgWV42INagNuCVaiYU/edit?pli=1&gid=0#gid=0";
 
         const MOOD_OPTIONS = [
@@ -371,7 +386,6 @@
             chartInstance = new Chart(ctx, chartConfig);
         }
 
-        // Admin Logic
         function handleFabClick() {
             if (!isAdminUnlocked) openPasswordModal();
             else toggleFabMenu();
@@ -428,7 +442,6 @@
             lucide.createIcons();
         }
 
-        // AKses Database
         function openDatabase() {
             if (SHEET_URL && SHEET_URL.startsWith('http')) {
                 window.open(SHEET_URL, '_blank');
@@ -459,4 +472,3 @@
     </script>
 </body>
 </html>
-
