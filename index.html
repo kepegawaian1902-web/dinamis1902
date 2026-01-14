@@ -6,6 +6,7 @@
     <title>DINAMIS BPS - Mood Polling (Sheets Version)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -69,22 +70,22 @@
 </head>
 <body class="text-slate-900 pb-20 relative min-h-screen header-gradient">
 
-    <!-- Password Modal -->
+    <!-- Password Modal (Narrower for Admin Access) -->
     <div id="passwordModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
-        <div class="glass-modal w-full max-sm p-8 rounded-[2.5rem] shadow-2xl space-y-6">
+        <div class="glass-modal w-full max-w-xs p-8 rounded-[2.5rem] shadow-2xl space-y-6">
             <div class="text-center space-y-2">
-                <div class="w-16 h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg rotate-3 mb-4">
-                    <i data-lucide="shield-lock" class="w-8 h-8"></i>
+                <div class="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg rotate-3 mb-2">
+                    <i data-lucide="shield-lock" class="w-7 h-7"></i>
                 </div>
-                <h3 class="text-2xl font-black text-slate-900 uppercase italic tracking-tighter">Akses Admin</h3>
-                <p class="text-slate-500 font-bold text-sm">Masukkan password untuk membuka menu</p>
+                <h3 class="text-xl font-black text-slate-900 uppercase italic tracking-tighter">Admin</h3>
+                <p class="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Masukkan Password</p>
             </div>
             <div class="space-y-4">
-                <input type="password" id="adminPasswordInput" placeholder="••••••••" class="w-full px-6 py-4 bg-white/50 border-2 border-slate-200 rounded-2xl focus:border-indigo-500 focus:outline-none font-bold text-center tracking-widest transition-all">
-                <div id="passwordError" class="hidden text-rose-500 text-center text-xs font-black uppercase tracking-tighter">Password Salah!</div>
-                <div class="grid grid-cols-2 gap-3">
-                    <button onclick="closePasswordModal()" class="px-6 py-4 bg-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-300 transition-all">Batal</button>
-                    <button onclick="checkAdminPassword()" class="px-6 py-4 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all uppercase text-sm">Masuk</button>
+                <input type="password" id="adminPasswordInput" placeholder="••••" class="w-full px-4 py-3 bg-white/50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none font-bold text-center tracking-widest transition-all">
+                <div id="passwordError" class="hidden text-rose-500 text-center text-[10px] font-black uppercase tracking-tighter">Password Salah!</div>
+                <div class="flex flex-col gap-2">
+                    <button onclick="checkAdminPassword()" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all uppercase text-xs">Masuk</button>
+                    <button onclick="closePasswordModal()" class="w-full py-2 text-slate-400 font-bold text-[10px] uppercase hover:text-slate-600 transition-all">Tutup</button>
                 </div>
             </div>
         </div>
@@ -96,7 +97,6 @@
             <div id="successEmojiDisplay" class="text-9xl animate-float drop-shadow-2xl">🤩</div>
             <div class="space-y-3">
                 <h3 class="text-4xl font-black text-slate-900 tracking-tighter italic uppercase">BERHASIL!</h3>
-                <!-- Teks diperbarui di sini -->
                 <p class="text-slate-500 font-bold text-lg text-sync-status">Menyimpan ke Database...</p>
             </div>
             <div class="w-16 h-1 bg-emerald-500 mx-auto rounded-full"></div>
@@ -106,28 +106,28 @@
     <!-- FLOATING ADMIN BUTTON -->
     <div class="fixed bottom-6 right-6 z-[150] flex flex-col items-end gap-3">
         <div id="adminFabMenu" class="fab-hidden admin-fab-menu flex flex-col gap-3 mb-2">
-            <button onclick="downloadReport()" class="flex items-center gap-3 bg-white text-indigo-600 font-bold px-6 py-3 rounded-2xl shadow-2xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all group">
-                <span class="text-sm uppercase tracking-tight">Unduh Rekap</span>
-                <div class="w-10 h-10 flex items-center justify-center bg-indigo-50 group-hover:bg-indigo-500 group-hover:text-white rounded-xl transition-colors">
-                    <i data-lucide="download" class="w-5 h-5"></i>
+            <button onclick="downloadReport()" class="flex items-center gap-3 bg-white text-indigo-600 font-bold px-5 py-3 rounded-2xl shadow-2xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all group">
+                <span class="text-xs uppercase tracking-tight">Unduh</span>
+                <div class="w-8 h-8 flex items-center justify-center bg-indigo-50 group-hover:bg-indigo-500 group-hover:text-white rounded-lg transition-colors">
+                    <i data-lucide="download" class="w-4 h-4"></i>
                 </div>
             </button>
-            <button onclick="openDatabase()" class="flex items-center gap-3 bg-emerald-50 text-emerald-600 font-bold px-6 py-3 rounded-2xl shadow-2xl border border-emerald-200 hover:bg-emerald-600 hover:text-white transition-all group">
-                <span class="text-sm uppercase tracking-tight">Akses Database</span>
-                <div class="w-10 h-10 flex items-center justify-center bg-emerald-100 group-hover:bg-emerald-500 group-hover:text-white rounded-xl transition-colors">
-                    <i data-lucide="database" class="w-5 h-5"></i>
+            <button onclick="openDatabase()" class="flex items-center gap-3 bg-white text-emerald-600 font-bold px-5 py-3 rounded-2xl shadow-2xl border border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all group">
+                <span class="text-xs uppercase tracking-tight">Data</span>
+                <div class="w-8 h-8 flex items-center justify-center bg-emerald-50 group-hover:bg-emerald-500 group-hover:text-white rounded-lg transition-colors">
+                    <i data-lucide="database" class="w-4 h-4"></i>
                 </div>
             </button>
-            <button onclick="lockAdmin()" class="flex items-center gap-3 bg-slate-900 text-white font-bold px-6 py-3 rounded-2xl shadow-2xl hover:bg-black transition-all group">
-                <span class="text-sm uppercase tracking-tight">Kunci Admin</span>
-                <div class="w-10 h-10 flex items-center justify-center bg-slate-800 group-hover:bg-slate-700 rounded-xl transition-colors">
-                    <i data-lucide="log-out" class="w-5 h-5"></i>
+            <button onclick="lockAdmin()" class="flex items-center gap-3 bg-slate-900 text-white font-bold px-5 py-3 rounded-2xl shadow-2xl hover:bg-black transition-all group">
+                <span class="text-xs uppercase tracking-tight">Kunci</span>
+                <div class="w-8 h-8 flex items-center justify-center bg-slate-800 group-hover:bg-slate-700 rounded-lg transition-colors">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
                 </div>
             </button>
         </div>
         
-        <button id="mainFab" onclick="handleFabClick()" class="w-16 h-16 bg-slate-950 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group">
-            <i id="fabIcon" data-lucide="lock" class="group-hover:rotate-12 transition-transform"></i>
+        <button id="mainFab" onclick="handleFabClick()" class="w-14 h-14 bg-slate-950 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group">
+            <i id="fabIcon" data-lucide="lock" class="w-5 h-5 group-hover:rotate-12 transition-transform"></i>
         </button>
     </div>
 
@@ -212,12 +212,11 @@
                     </button>
                 </div>
             </div>
-            <div class="h-[400px] w-full flex items-center justify-center">
+            <div class="relative h-[480px] w-full flex items-center justify-center">
                 <canvas id="moodChart"></canvas>
             </div>
         </section>
 
-        <!-- Minimalist Credit Footer -->
         <footer class="pt-10 pb-20 text-center space-y-4">
             <div class="credit-line max-w-xs mx-auto opacity-20"></div>
             <div class="flex flex-col items-center">
@@ -232,12 +231,15 @@
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_gy-pVOg7AqWvw840omAufQ1tuzyGpfTLhbBabtKTrycVvOX8T7dTSq-o_v1ORfBr/exec";
         const SHEET_URL = "https://docs.google.com/spreadsheets/d/1g2WfB6j6pEHc0q4iAb2FhSh_9QgWV42INagNuCVaiYU/edit?pli=1&gid=0#gid=0";
 
+        Chart.register(ChartDataLabels);
+
+        // Palet warna yang diperbarui: Berurut dari Hijau ke Merah
         const MOOD_OPTIONS = [
-            { id: 'excited', label: 'Semangat', emoji: '🤩', color: '#FBBF24' },
-            { id: 'good', label: 'Senang', emoji: '😊', color: '#10B981' },
-            { id: 'neutral', label: 'Biasa', emoji: '😐', color: '#64748B' },
-            { id: 'tired', label: 'Lelah', emoji: '😫', color: '#3B82F6' },
-            { id: 'burnout', label: 'Stress', emoji: '🤯', color: '#EF4444' }
+            { id: 'excited', label: 'Semangat', emoji: '🤩', color: '#10B981' }, // Hijau (Emerald)
+            { id: 'good', label: 'Senang', emoji: '😊', color: '#84CC16' },    // Hijau Muda (Lime)
+            { id: 'neutral', label: 'Biasa', emoji: '😐', color: '#94A3B8' },   // Abu-abu (Slate)
+            { id: 'tired', label: 'Lelah', emoji: '😫', color: '#F59E0B' },     // Oranye (Amber)
+            { id: 'burnout', label: 'Stress', emoji: '🤯', color: '#EF4444' }    // Merah (Rose)
         ];
 
         let chartInstance = null;
@@ -338,51 +340,95 @@
             if (!chartCanvas) return;
             const ctx = chartCanvas.getContext('2d');
             const dataValues = MOOD_OPTIONS.map(m => counts[m.id] || 0);
+            const total = dataValues.reduce((a, b) => a + b, 0);
+
             if (chartInstance) chartInstance.destroy();
 
             const chartConfig = {
                 type: chartType,
                 data: {
-                    labels: MOOD_OPTIONS.map(m => m.label),
+                    labels: MOOD_OPTIONS.map(m => m.emoji + ' ' + m.label),
                     datasets: [{
-                        label: 'Jumlah Mood',
                         data: dataValues,
                         backgroundColor: MOOD_OPTIONS.map(m => m.color),
-                        borderWidth: 0,
-                        hoverOffset: 15
+                        borderWidth: chartType === 'pie' ? 6 : 0,
+                        borderColor: '#FFFFFF',
+                        hoverOffset: 30
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { 
+                        padding: chartType === 'pie' ? { top: 20, bottom: 20, left: 20, right: 20 } : 0 
+                    },
                     plugins: { 
                         legend: { 
                             display: chartType === 'pie',
                             position: 'bottom',
-                            labels: { font: { weight: 'bold', family: "'Plus Jakarta Sans'" }, padding: 20 }
+                            labels: { 
+                                // Legenda diperbesar secara signifikan
+                                font: { weight: '800', family: "'Plus Jakarta Sans'", size: 15 },
+                                padding: 40,
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                color: '#1e293b'
+                            }
                         },
                         tooltip: {
                             backgroundColor: '#0f172a',
-                            padding: 12,
+                            titleFont: { weight: 'bold', size: 14 },
+                            bodyFont: { size: 14 },
+                            padding: 18,
+                            cornerRadius: 15,
                             callbacks: {
                                 label: function(context) {
-                                    const total = dataValues.reduce((a, b) => a + b, 0);
                                     const val = context.parsed.y || context.parsed || 0;
                                     const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
                                     return ` ${val} Suara (${pct}%)`;
                                 }
                             }
+                        },
+                        datalabels: {
+                            display: function(context) {
+                                return context.dataset.data[context.dataIndex] > 0;
+                            },
+                            color: '#FFFFFF',
+                            font: { weight: '900', size: chartType === 'pie' ? 18 : 12, family: "'Plus Jakarta Sans'" },
+                            formatter: (value, ctx) => {
+                                if (total === 0) return '';
+                                const percentage = ((value / total) * 100).toFixed(0) + '%';
+                                return chartType === 'pie' ? percentage : value;
+                            },
+                            anchor: 'center',
+                            align: 'center',
+                            textShadowColor: 'rgba(0,0,0,0.5)',
+                            textShadowBlur: 8
                         }
                     }
                 }
             };
+
             if (chartType === 'bar') {
                 chartConfig.options.scales = {
-                    y: { beginAtZero: true, ticks: { stepSize: 1, color: '#94a3b8' } },
-                    x: { grid: { display: false }, ticks: { color: '#64748b', font: { weight: 'bold' } } }
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { color: '#f1f5f9' },
+                        ticks: { stepSize: 1, color: '#94a3b8', font: { weight: 'bold' } } 
+                    },
+                    x: { 
+                        grid: { display: false }, 
+                        ticks: { color: '#64748b', font: { weight: '800', size: 11 } } 
+                    }
                 };
-                chartConfig.data.datasets[0].borderRadius = 12;
+                chartConfig.data.datasets[0].borderRadius = 25;
+                chartConfig.options.plugins.datalabels.anchor = 'end';
+                chartConfig.options.plugins.datalabels.align = 'top';
+                chartConfig.options.plugins.datalabels.color = '#64748b';
+            } else {
+                chartConfig.options.cutout = '45%'; 
             }
+
             chartInstance = new Chart(ctx, chartConfig);
         }
 
