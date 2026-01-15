@@ -25,7 +25,7 @@
         }
 
         .mood-card:active {
-            transform: scale(0.95);
+            transform: scale(0.9);
         }
 
         .header-gradient {
@@ -38,6 +38,26 @@
             50% { transform: translateY(-15px); }
         }
         .animate-float { animation: float 3s ease-in-out infinite; }
+
+        /* Transitions */
+        .page-transition {
+            transition: opacity 0.6s ease-out, transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .fade-out {
+            opacity: 0;
+            transform: translateY(-20px);
+            pointer-events: none;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s forwards cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
         .admin-fab-menu {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -66,11 +86,28 @@
             height: 1px;
             background: linear-gradient(to right, transparent, #e2e8f0, transparent);
         }
+
+        /* Success Message Animation */
+        .success-pop {
+            animation: successPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes successPop {
+            0% { transform: scale(0.8); opacity: 0; filter: blur(10px); }
+            100% { transform: scale(1); opacity: 1; filter: blur(0); }
+        }
+
+        #votedView {
+            transition: background-color 0.8s ease;
+        }
+
+        #successOverlay {
+            transition: background-color 0.5s ease, opacity 0.5s ease;
+        }
     </style>
 </head>
 <body class="text-slate-900 pb-20 relative min-h-screen header-gradient">
 
-    <!-- Password Modal (Narrower for Admin Access) -->
+    <!-- Password Modal -->
     <div id="passwordModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
         <div class="glass-modal w-full max-w-xs p-8 rounded-[2.5rem] shadow-2xl space-y-6">
             <div class="text-center space-y-2">
@@ -91,15 +128,15 @@
         </div>
     </div>
 
-    <!-- Success Overlay -->
-    <div id="successOverlay" class="fixed inset-0 z-[100] hidden flex flex-col items-center justify-center bg-white/95 backdrop-blur-xl">
-        <div class="relative text-center space-y-8 p-12">
-            <div id="successEmojiDisplay" class="text-9xl animate-float drop-shadow-2xl">🤩</div>
-            <div class="space-y-3">
-                <h3 class="text-4xl font-black text-slate-900 tracking-tighter italic uppercase">BERHASIL!</h3>
-                <p class="text-slate-500 font-bold text-lg text-sync-status">Menyimpan ke Database...</p>
+    <!-- Success Overlay (No Box Version) -->
+    <div id="successOverlay" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center backdrop-blur-3xl transition-all duration-500">
+        <div class="text-center space-y-10 success-pop">
+            <div id="successEmojiDisplay" class="text-[12rem] animate-float drop-shadow-[0_25px_25px_rgba(0,0,0,0.15)]">🤩</div>
+            <div class="space-y-4">
+                <h3 class="text-5xl font-black text-slate-900 tracking-tighter italic uppercase">BERHASIL!</h3>
+                <p class="text-slate-700 font-bold text-xl">Suara kamu telah tersimpan secara anonim.</p>
             </div>
-            <div class="w-16 h-1 bg-emerald-500 mx-auto rounded-full"></div>
+            <div class="w-24 h-1.5 bg-slate-900/10 mx-auto rounded-full"></div>
         </div>
     </div>
 
@@ -143,7 +180,7 @@
             </div>
         </header>
 
-        <section id="pollingView" class="bg-white p-8 md:p-16 rounded-[4rem] shadow-2xl shadow-indigo-900/5 border border-white relative overflow-hidden">
+        <section id="pollingView" class="page-transition bg-white p-8 md:p-16 rounded-[4rem] shadow-2xl shadow-indigo-900/5 border border-white relative overflow-hidden">
             <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full -mr-32 -mt-32 opacity-50"></div>
             <div class="relative z-10 space-y-12">
                 <div class="space-y-6 max-w-2xl">
@@ -158,10 +195,10 @@
             </div>
         </section>
 
-        <section id="votedView" class="hidden bg-indigo-600 p-10 md:p-16 rounded-[4rem] text-white flex flex-col md:flex-row items-center justify-between gap-10 shadow-2xl shadow-indigo-600/30">
+        <section id="votedView" class="hidden p-10 md:p-16 rounded-[4rem] text-white flex flex-col md:flex-row items-center justify-between gap-10 shadow-2xl">
             <div class="space-y-4 text-center md:text-left">
                 <h3 class="text-4xl font-black italic uppercase tracking-tighter leading-none">Selesai!</h3>
-                <p class="text-indigo-100 font-bold text-lg opacity-80">Terima kasih atas partisipasi Anda.</p>
+                <p id="votedMessage" class="text-white/80 font-bold text-lg">Terima kasih atas partisipasi Anda.</p>
                 <button onclick="location.reload()" class="mt-4 px-6 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-xs font-bold transition-all border border-white/30">Kirim Lagi</button>
             </div>
             <div id="votedEmojiDisplay" class="text-8xl animate-float"></div>
@@ -233,13 +270,12 @@
 
         Chart.register(ChartDataLabels);
 
-        // Palet warna yang diperbarui: Berurut dari Hijau ke Merah
         const MOOD_OPTIONS = [
-            { id: 'excited', label: 'Semangat', emoji: '🤩', color: '#10B981' }, // Hijau (Emerald)
-            { id: 'good', label: 'Senang', emoji: '😊', color: '#84CC16' },    // Hijau Muda (Lime)
-            { id: 'neutral', label: 'Biasa', emoji: '😐', color: '#94A3B8' },   // Abu-abu (Slate)
-            { id: 'tired', label: 'Lelah', emoji: '😫', color: '#F59E0B' },     // Oranye (Amber)
-            { id: 'burnout', label: 'Stress', emoji: '🤯', color: '#EF4444' }    // Merah (Rose)
+            { id: 'excited', label: 'Semangat', emoji: '🤩', color: '#10B981' }, 
+            { id: 'good', label: 'Senang', emoji: '😊', color: '#84CC16' },    
+            { id: 'neutral', label: 'Biasa', emoji: '😐', color: '#94A3B8' },   
+            { id: 'tired', label: 'Lelah', emoji: '😫', color: '#F59E0B' },     
+            { id: 'burnout', label: 'Stress', emoji: '🤯', color: '#EF4444' }    
         ];
 
         let chartInstance = null;
@@ -270,11 +306,17 @@
 
         async function voteMood(moodId) {
             const mood = MOOD_OPTIONS.find(m => m.id === moodId);
+            const successOverlay = document.getElementById('successOverlay');
+            const pollingView = document.getElementById('pollingView');
+            const votedView = document.getElementById('votedView');
+            
+            // Background color hint based on mood selection
+            successOverlay.style.backgroundColor = `${mood.color}15`; 
             document.getElementById('successEmojiDisplay').innerText = mood.emoji;
-            document.getElementById('successOverlay').classList.remove('hidden');
+            successOverlay.classList.remove('hidden');
 
             try {
-                await fetch(SCRIPT_URL, {
+                fetch(SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors', 
                     headers: { 'Content-Type': 'application/json' },
@@ -287,15 +329,28 @@
                 });
 
                 setTimeout(() => {
-                    document.getElementById('successOverlay').classList.add('hidden');
-                    document.getElementById('pollingView').classList.add('hidden');
-                    document.getElementById('votedView').classList.remove('hidden');
-                    document.getElementById('votedEmojiDisplay').innerText = mood.emoji;
-                    refreshData(); 
-                }, 1500);
+                    successOverlay.style.opacity = '0';
+                    pollingView.classList.add('fade-out');
+                    
+                    setTimeout(() => {
+                        successOverlay.classList.add('hidden');
+                        successOverlay.style.opacity = '1';
+                        pollingView.classList.add('hidden');
+                        
+                        votedView.style.backgroundColor = mood.color;
+                        votedView.style.boxShadow = `0 25px 50px -12px ${mood.color}60`;
+                        
+                        votedView.classList.remove('hidden');
+                        votedView.classList.add('fade-in');
+                        document.getElementById('votedEmojiDisplay').innerText = mood.emoji;
+                        
+                        refreshData(); 
+                    }, 500);
+                }, 2000);
+
             } catch (err) {
                 console.error("Error voting:", err);
-                document.getElementById('successOverlay').classList.add('hidden');
+                successOverlay.classList.add('hidden');
             }
         }
 
@@ -367,7 +422,6 @@
                             display: chartType === 'pie',
                             position: 'bottom',
                             labels: { 
-                                // Legenda diperbesar secara signifikan
                                 font: { weight: '800', family: "'Plus Jakarta Sans'", size: 15 },
                                 padding: 40,
                                 usePointStyle: true,
