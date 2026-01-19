@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DINAMIS BPS - Mood Polling (Sheets Version)</title>
+    <title>DINAMIS BPS - Mood Polling</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -20,12 +20,9 @@
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         
-        .mood-card:hover {
+        .mood-card:hover:not(:disabled) {
             transform: translateY(-10px) scale(1.02);
-        }
-
-        .mood-card:active {
-            transform: scale(0.9);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
 
         .header-gradient {
@@ -39,20 +36,11 @@
         }
         .animate-float { animation: float 3s ease-in-out infinite; }
 
-        /* Transitions */
         .page-transition {
             transition: opacity 0.6s ease-out, transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
         }
 
-        .fade-out {
-            opacity: 0;
-            transform: translateY(-20px);
-            pointer-events: none;
-        }
-
-        .fade-in {
-            animation: fadeIn 0.8s forwards cubic-bezier(0.23, 1, 0.32, 1);
-        }
+        .fade-in { animation: fadeIn 0.8s forwards cubic-bezier(0.23, 1, 0.32, 1); }
 
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
@@ -64,11 +52,7 @@
             transform-origin: bottom right;
         }
 
-        .fab-hidden {
-            transform: scale(0) translateY(20px);
-            opacity: 0;
-            pointer-events: none;
-        }
+        .fab-hidden { transform: scale(0) translateY(20px); opacity: 0; pointer-events: none; }
 
         .glass-modal {
             background: rgba(255, 255, 255, 0.8);
@@ -76,33 +60,33 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
-        .chart-toggle-active {
+        .tab-active {
             background-color: #4f46e5;
             color: white;
             box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
         }
 
-        .credit-line {
-            height: 1px;
-            background: linear-gradient(to right, transparent, #e2e8f0, transparent);
+        .chart-toggle-active {
+            background-color: white;
+            color: #4f46e5;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
 
-        /* Success Message Animation */
-        .success-pop {
-            animation: successPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
+        .success-pop { animation: successPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
         @keyframes successPop {
             0% { transform: scale(0.8); opacity: 0; filter: blur(10px); }
             100% { transform: scale(1); opacity: 1; filter: blur(0); }
         }
 
-        #votedView {
-            transition: background-color 0.8s ease;
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
         }
-
-        #successOverlay {
-            transition: background-color 0.5s ease, opacity 0.5s ease;
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="text-slate-900 pb-20 relative min-h-screen header-gradient">
@@ -128,7 +112,21 @@
         </div>
     </div>
 
-    <!-- Success Overlay (No Box Version) -->
+    <!-- Duplicate Vote Warning Modal -->
+    <div id="duplicateModal" class="fixed inset-0 z-[400] hidden flex items-center justify-center bg-slate-950/60 backdrop-blur-md p-6">
+        <div class="bg-white w-full max-w-sm p-10 rounded-[3rem] shadow-2xl text-center space-y-6 border-b-8 border-rose-500 success-pop">
+            <div class="w-20 h-20 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto">
+                <i data-lucide="alert-circle" class="w-10 h-10"></i>
+            </div>
+            <div class="space-y-2">
+                <h3 class="text-2xl font-black text-slate-900 uppercase italic tracking-tighter">Akses Terbatas</h3>
+                <p class="text-slate-500 font-bold text-sm leading-relaxed">Sistem mendeteksi Anda sudah berpartisipasi hari ini. Sampai jumpa di polling berikutnya!</p>
+            </div>
+            <button onclick="closeDuplicateModal()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-black transition-all uppercase text-xs tracking-widest">Tutup</button>
+        </div>
+    </div>
+
+    <!-- Success Overlay -->
     <div id="successOverlay" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center backdrop-blur-3xl transition-all duration-500">
         <div class="text-center space-y-10 success-pop">
             <div id="successEmojiDisplay" class="text-[12rem] animate-float drop-shadow-[0_25px_25px_rgba(0,0,0,0.15)]">🤩</div>
@@ -143,27 +141,26 @@
     <!-- FLOATING ADMIN BUTTON -->
     <div class="fixed bottom-6 right-6 z-[150] flex flex-col items-end gap-3">
         <div id="adminFabMenu" class="fab-hidden admin-fab-menu flex flex-col gap-3 mb-2">
-            <!-- Menu Control Vote -->
-            <button id="btnToggleVote" onclick="toggleVoteStatus()" class="flex items-center gap-3 bg-white text-rose-600 font-bold px-5 py-3 rounded-2xl shadow-2xl border border-rose-100 hover:bg-rose-600 hover:text-white transition-all group">
-                <span id="txtToggleVote" class="text-xs uppercase tracking-tight">Tutup Vote</span>
-                <div class="w-8 h-8 flex items-center justify-center bg-rose-50 group-hover:bg-rose-500 group-hover:text-white rounded-lg transition-colors">
-                    <i id="iconToggleVote" data-lucide="circle-stop" class="w-4 h-4"></i>
-                </div>
-            </button>
-            <button onclick="downloadReport()" class="flex items-center gap-3 bg-white text-indigo-600 font-bold px-5 py-3 rounded-2xl shadow-2xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all group">
-                <span class="text-xs uppercase tracking-tight">Unduh</span>
+            <button onclick="downloadRekapData()" class="flex items-center gap-3 bg-white text-indigo-600 font-bold px-5 py-3 rounded-2xl shadow-2xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all group">
+                <span class="text-xs uppercase tracking-tight">Unduh Rekap Data</span>
                 <div class="w-8 h-8 flex items-center justify-center bg-indigo-50 group-hover:bg-indigo-500 group-hover:text-white rounded-lg transition-colors">
                     <i data-lucide="download" class="w-4 h-4"></i>
                 </div>
             </button>
+            <button onclick="confirmResetData()" class="flex items-center gap-3 bg-white text-rose-600 font-bold px-5 py-3 rounded-2xl shadow-2xl border border-rose-100 hover:bg-rose-600 hover:text-white transition-all group">
+                <span class="text-xs uppercase tracking-tight">Reset Data Manual</span>
+                <div class="w-8 h-8 flex items-center justify-center bg-rose-50 group-hover:bg-rose-500 group-hover:text-white rounded-lg transition-colors">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </div>
+            </button>
             <button onclick="openDatabase()" class="flex items-center gap-3 bg-white text-emerald-600 font-bold px-5 py-3 rounded-2xl shadow-2xl border border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all group">
-                <span class="text-xs uppercase tracking-tight">Data</span>
+                <span class="text-xs uppercase tracking-tight">Lihat Spreadsheet</span>
                 <div class="w-8 h-8 flex items-center justify-center bg-emerald-50 group-hover:bg-emerald-500 group-hover:text-white rounded-lg transition-colors">
-                    <i data-lucide="database" class="w-4 h-4"></i>
+                    <i data-lucide="external-link" class="w-4 h-4"></i>
                 </div>
             </button>
             <button onclick="lockAdmin()" class="flex items-center gap-3 bg-slate-900 text-white font-bold px-5 py-3 rounded-2xl shadow-2xl hover:bg-black transition-all group">
-                <span class="text-xs uppercase tracking-tight">Kunci</span>
+                <span class="text-xs uppercase tracking-tight">Kunci Admin</span>
                 <div class="w-8 h-8 flex items-center justify-center bg-slate-800 group-hover:bg-slate-700 rounded-lg transition-colors">
                     <i data-lucide="log-out" class="w-4 h-4"></i>
                 </div>
@@ -178,208 +175,180 @@
     <!-- MAIN APP CONTAINER -->
     <div class="max-w-5xl mx-auto px-6 pt-12 md:pt-20 space-y-16">
         <header class="text-center space-y-6">
-            <div class="space-y-2">
+            <div class="space-y-4">
                 <div class="inline-block relative">
                     <h1 class="text-7xl md:text-9xl font-black tracking-tighter text-slate-950 leading-none">DINAMIS</h1>
                     <span class="absolute -bottom-1 -right-2 bg-indigo-600 text-white text-[10px] md:text-xs font-black px-3 py-1 rounded-full rotate-2 shadow-lg">BPS 1902</span>
                 </div>
-                <p class="text-slate-400 font-bold italic text-sm md:text-lg tracking-tight pt-4">"Dinamika Mingguan Internal Pegawai BPS"</p>
+                <p class="text-slate-400 font-bold italic text-sm md:text-lg tracking-tight pt-2">"Dinamika Internal Mingguan Pegawai BPS"</p>
             </div>
         </header>
 
+        <!-- POLLING VIEW -->
         <section id="pollingView" class="page-transition bg-white p-8 md:p-16 rounded-[4rem] shadow-2xl shadow-indigo-900/5 border border-white relative overflow-hidden">
             <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full -mr-32 -mt-32 opacity-50"></div>
             <div class="relative z-10 space-y-12">
                 <div id="activePollHeader" class="space-y-6 max-w-2xl">
                     <h2 class="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-[1.1]">Yuk, share cerita kerja kamu minggu ini 👋</h2>
-                    <div class="space-y-1">
-                        <p class="text-slate-500 font-bold text-base md:text-xl flex items-center gap-2">
-                            <span>Singkat ✍️, santai 😊, dan anonim 🔒</span>
-                        </p>
-                    </div>
+                    <p class="text-slate-500 font-bold text-base md:text-xl">Singkat ✍️, santai 😊, dan anonim 🔒</p>
                 </div>
-                <!-- Mood Grid -->
                 <div id="moodGrid" class="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6"></div>
                 
-                <!-- Closed Poll View -->
-                <div id="closedPollView" class="hidden py-20 text-center space-y-6">
-                    <div class="text-8xl animate-float">🔒</div>
+                <div id="alreadyVotedView" class="hidden py-16 text-center space-y-6">
+                    <div class="text-8xl animate-float">✅</div>
                     <div class="space-y-2">
-                        <h2 class="text-4xl font-black text-slate-900 uppercase italic tracking-tighter">Voting Ditutup</h2>
-                        <p class="text-slate-500 font-bold">Terima kasih atas partisipasi Anda. Polling saat ini sudah tidak menerima jawaban.</p>
+                        <h2 class="text-4xl font-black text-slate-900 uppercase italic tracking-tighter">Sudah Mengisi Hari Ini</h2>
+                        <p class="text-slate-500 font-bold">Terima kasih! Anda sudah mengirimkan polling untuk hari ini.<br>Silakan kembali lagi besok pagi.</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section id="votedView" class="hidden p-10 md:p-16 rounded-[4rem] text-white flex flex-col md:flex-row items-center justify-between gap-10 shadow-2xl">
+        <!-- VOTED VIEW -->
+        <section id="votedView" class="hidden p-10 md:p-16 rounded-[4rem] text-white flex flex-col md:flex-row items-center justify-between gap-10 shadow-2xl transition-all duration-700">
             <div class="space-y-4 text-center md:text-left">
-                <h3 class="text-4xl font-black italic uppercase tracking-tighter leading-none">Selesai!</h3>
-                <p id="votedMessage" class="text-white/80 font-bold text-lg">Terima kasih atas partisipasi Anda.</p>
-                <button onclick="location.reload()" class="mt-4 px-6 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-xs font-bold transition-all border border-white/30">Kirim Lagi</button>
+                <h3 class="text-4xl font-black italic uppercase tracking-tighter leading-none">Terima Kasih!</h3>
+                <p id="votedMessage" class="text-white/80 font-bold text-lg">Polling Anda telah kami rekap secara anonim.</p>
             </div>
             <div id="votedEmojiDisplay" class="text-8xl animate-float"></div>
         </section>
 
-        <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white p-8 rounded-[3rem] border border-white shadow-sm flex items-center gap-6">
-                <div class="p-5 bg-indigo-50 text-indigo-600 rounded-[2rem]"><i data-lucide="users-2"></i></div>
-                <div>
-                    <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Masuk</p>
-                    <p id="statTotalVotes" class="text-3xl font-black text-slate-900">0</p>
-                </div>
-            </div>
-            <div class="bg-white p-8 rounded-[3rem] border border-white shadow-sm flex items-center gap-6">
-                <div class="p-5 bg-emerald-50 text-emerald-600 rounded-[2rem]"><i data-lucide="clock"></i></div>
-                <div>
-                    <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Update Terakhir</p>
-                    <p id="statLastUpdate" class="text-sm font-black text-slate-900">Menunggu...</p>
-                </div>
-            </div>
-            <div class="bg-white p-8 rounded-[3rem] border border-white shadow-sm flex items-center gap-6">
-                <div id="statusIconBg" class="p-5 bg-amber-50 text-amber-600 rounded-[2rem]"><i id="statusIcon" data-lucide="shield-check"></i></div>
-                <div>
-                    <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Status Polling</p>
-                    <p id="statPollStatus" class="text-sm font-black text-slate-900 uppercase">Terbuka</p>
-                </div>
-            </div>
-        </div>
-
-        <section class="bg-white p-10 md:p-16 rounded-[4rem] shadow-2xl shadow-indigo-900/5 border border-white">
+        <!-- STATS SECTION -->
+        <section class="bg-white p-8 md:p-16 rounded-[4rem] shadow-2xl shadow-indigo-900/5 border border-white">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                 <div class="flex items-center gap-6">
-                    <div class="p-5 bg-slate-950 text-white rounded-3xl shadow-xl rotate-3"><i data-lucide="bar-chart-big"></i></div>
+                    <div class="p-5 bg-slate-950 text-white rounded-3xl shadow-xl rotate-3"><i data-lucide="bar-chart-2"></i></div>
                     <div>
-                        <h2 class="text-3xl font-black text-slate-900 tracking-tight">Ringkasan Data</h2>
-                        <p class="text-sm font-bold text-slate-400 italic">Distribusi polling pegawai minggu ini</p>
+                        <h2 class="text-3xl font-black text-slate-900 tracking-tight">Hasil Rekapitulasi</h2>
+                        <div class="flex items-center gap-2 mt-1">
+                            <div id="refreshIndicator" class="hidden loader"></div>
+                            <!-- UPDATED TEXT HERE -->
+                            <p id="lastUpdateText" class="text-sm font-bold text-slate-400 italic">Memuat data...</p>
+                        </div>
                     </div>
                 </div>
-                <div class="flex items-center bg-slate-100 p-1.5 rounded-2xl border border-slate-200 self-start md:self-center">
-                    <button onclick="setChartType('bar')" id="btnChartBar" class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-tighter transition-all chart-toggle-active">
-                        <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
-                        <span>Bar</span>
-                    </button>
-                    <button onclick="setChartType('pie')" id="btnChartPie" class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-tighter transition-all text-slate-500 hover:text-slate-700">
-                        <i data-lucide="pie-chart" class="w-4 h-4"></i>
-                        <span>Pie</span>
-                    </button>
-                </div>
             </div>
-            <div class="relative h-[480px] w-full flex items-center justify-center">
-                <canvas id="moodChart"></canvas>
+
+            <div class="flex flex-col md:flex-row items-center justify-center gap-4 mb-10 bg-slate-50 p-2 rounded-[2rem] border border-slate-100 w-fit mx-auto">
+                <button onclick="switchStatsTab('visual')" id="tabVisual" class="flex items-center gap-2 px-8 py-3 rounded-2xl font-bold text-xs uppercase tracking-tighter transition-all tab-active">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    <span>Visual Grafik</span>
+                </button>
+                <button onclick="switchStatsTab('rekap')" id="tabRekap" class="flex items-center gap-2 px-8 py-3 rounded-2xl font-bold text-xs uppercase tracking-tighter transition-all text-slate-500 hover:text-slate-700">
+                    <i data-lucide="table-2" class="w-4 h-4"></i>
+                    <span>Tabel Rekap</span>
+                </button>
+            </div>
+
+            <div id="contentVisual" class="space-y-8">
+                <div class="flex justify-end items-center gap-4 mb-4">
+                    <div class="flex items-center bg-indigo-50 p-1 rounded-xl">
+                        <button onclick="setChartType('bar')" id="btnChartBar" class="p-2 rounded-lg transition-all chart-toggle-active"><i data-lucide="bar-chart-3" class="w-4 h-4"></i></button>
+                        <button onclick="setChartType('pie')" id="btnChartPie" class="p-2 rounded-lg transition-all text-indigo-400 hover:text-indigo-600"><i data-lucide="pie-chart" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+                
+                <div class="relative h-[450px] w-full bg-slate-50/50 rounded-3xl flex items-center justify-center">
+                    <canvas id="moodChart"></canvas>
+                </div>
+
+                <div id="summaryCards" class="grid grid-cols-2 md:grid-cols-5 gap-4 pt-6 border-t border-slate-100"></div>
+            </div>
+
+            <div id="contentRekap" class="hidden space-y-6">
+                <div class="overflow-hidden rounded-[2.5rem] border border-slate-100 shadow-sm bg-white">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50">
+                                <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori Mood</th>
+                                <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Jumlah Suara</th>
+                                <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Persentase</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rekapTableBody" class="divide-y divide-slate-50 font-bold text-slate-700"></tbody>
+                        <tfoot class="bg-indigo-50/50">
+                            <tr>
+                                <td class="px-8 py-6 font-black text-indigo-900 italic">TOTAL SUARA</td>
+                                <td id="rekapTotalSuara" class="px-8 py-6 font-black text-indigo-900 text-center text-2xl tracking-tighter">0</td>
+                                <td class="px-8 py-6 font-black text-indigo-900 text-right">100%</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             </div>
         </section>
 
         <footer class="pt-10 pb-20 text-center space-y-4">
-            <div class="credit-line max-w-xs mx-auto opacity-20"></div>
             <div class="flex flex-col items-center">
                 <p class="text-sm font-black text-slate-800 tracking-widest uppercase italic">BPS Kabupaten Belitung</p>
                 <p class="mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Tim Zona Integritas</p>
-                <p class="mt-4 text-[9px] font-medium text-slate-300 uppercase tracking-widest">© 2026</p>
+                <p class="mt-4 text-[9px] font-medium text-slate-300 uppercase tracking-widest">v2.5 • 2026</p>
             </div>
         </footer>
     </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_gy-pVOg7AqWvw840omAufQ1tuzyGpfTLhbBabtKTrycVvOX8T7dTSq-o_v1ORfBr/exec";
-        const SHEET_URL = "https://docs.google.com/spreadsheets/d/1g2WfB6j6pEHc0q4iAb2FhSh_9QgWV42INagNuCVaiYU/edit?pli=1&gid=0#gid=0";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzp20w6I_SyCpPdldhWKDjLdsitfJywoqtJZ09zvtpNpG7xvAk1c5oUwmhTFFe8P-gH/exec";
+        const SHEET_URL = "https://docs.google.com/spreadsheets/d/1g2WfB6j6pEHc0q4iAb2FhSh_9QgWV42INagNuCVaiYU/edit?usp=sharing";
 
         Chart.register(ChartDataLabels);
 
         const MOOD_OPTIONS = [
-            { id: 'excited', label: 'Semangat', emoji: '🤩', color: '#10B981' }, 
-            { id: 'good', label: 'Senang', emoji: '😊', color: '#84CC16' },    
-            { id: 'neutral', label: 'Biasa', emoji: '😐', color: '#94A3B8' },   
-            { id: 'tired', label: 'Lelah', emoji: '😫', color: '#F59E0B' },     
-            { id: 'burnout', label: 'Stress', emoji: '🤯', color: '#EF4444' }    
+            { id: 'excited', label: 'Semangat', emoji: '🤩', color: '#10B981', gradient: ['#10B981', '#34D399'] }, 
+            { id: 'good', label: 'Senang', emoji: '😊', color: '#84CC16', gradient: ['#84CC16', '#BEF264'] },    
+            { id: 'neutral', label: 'Biasa', emoji: '😐', color: '#94A3B8', gradient: ['#94A3B8', '#CBD5E1'] },   
+            { id: 'tired', label: 'Lelah', emoji: '😫', color: '#F59E0B', gradient: ['#F59E0B', '#FCD34D'] },     
+            { id: 'burnout', label: 'Stress', emoji: '🤯', color: '#EF4444', gradient: ['#EF4444', '#F87171'] }    
         ];
 
         let chartInstance = null;
         let chartType = 'bar';
-        let lastStatsData = { total: 0, counts: {} };
+        let currentViewData = { total: 0, counts: {} };
         let isAdminUnlocked = false;
         let isFabMenuOpen = false;
-        let isVoteOpen = true; // State for vote status
+        let todayKey = '';
 
-        window.onload = () => {
+        window.onload = async () => {
             lucide.createIcons();
-            loadVoteStatus(); // Load status from local storage for instant feedback
-            renderMoodCards();
+            const now = new Date();
+            todayKey = `voted_${now.toDateString().replace(/ /g, '_')}`;
+            
+            const cachedData = localStorage.getItem('mood_stats_cache');
+            if (cachedData) {
+                currentViewData = JSON.parse(cachedData);
+                updateUIWithData();
+                document.getElementById('lastUpdateText').innerText = "Data Real-time Polling Mingguan";
+            }
+
+            if (checkIfVotedToday()) {
+                showAlreadyVotedUI();
+            } else {
+                renderMoodCards();
+            }
+            
             refreshData(); 
-            document.getElementById('adminPasswordInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') checkAdminPassword();
-            });
         };
 
-        // Persistent Vote Status using LocalStorage (Can be improved with Sheets API if needed)
-        function loadVoteStatus() {
-            const savedStatus = localStorage.getItem('dinamis_vote_status');
-            if (savedStatus === 'closed') {
-                isVoteOpen = false;
-                applyVoteStatusUI();
-            }
+        function checkIfVotedToday() {
+            return localStorage.getItem(todayKey) === 'true';
         }
 
-        function toggleVoteStatus() {
-            isVoteOpen = !isVoteOpen;
-            localStorage.setItem('dinamis_vote_status', isVoteOpen ? 'open' : 'closed');
-            applyVoteStatusUI();
-            toggleFabMenu();
+        function showAlreadyVotedUI() {
+            document.getElementById('moodGrid').classList.add('hidden');
+            document.getElementById('alreadyVotedView').classList.remove('hidden');
+            document.getElementById('activePollHeader').classList.add('opacity-40');
         }
 
-        function applyVoteStatusUI() {
-            const moodGrid = document.getElementById('moodGrid');
-            const pollHeader = document.getElementById('activePollHeader');
-            const closedView = document.getElementById('closedPollView');
-            const statStatus = document.getElementById('statPollStatus');
-            const statusIcon = document.getElementById('statusIcon');
-            const statusIconBg = document.getElementById('statusIconBg');
-            
-            // UI FAB Admin Update
-            const btnToggle = document.getElementById('btnToggleVote');
-            const txtToggle = document.getElementById('txtToggleVote');
-            const iconToggle = document.getElementById('iconToggleVote');
+        function openDuplicateModal() {
+            document.getElementById('duplicateModal').classList.remove('hidden');
+        }
 
-            if (isVoteOpen) {
-                moodGrid.classList.remove('hidden');
-                pollHeader.classList.remove('hidden');
-                closedView.classList.add('hidden');
-                statStatus.innerText = "Terbuka";
-                statStatus.classList.remove('text-rose-600');
-                statusIconBg.classList.replace('bg-rose-50', 'bg-amber-50');
-                statusIconBg.classList.replace('text-rose-600', 'text-amber-600');
-                statusIcon.setAttribute('data-lucide', 'shield-check');
-                
-                // Admin Button
-                btnToggle.classList.replace('text-emerald-600', 'text-rose-600');
-                btnToggle.classList.replace('border-emerald-100', 'border-rose-100');
-                btnToggle.classList.replace('hover:bg-emerald-600', 'hover:bg-rose-600');
-                txtToggle.innerText = "Tutup Vote";
-                iconToggle.setAttribute('data-lucide', 'circle-stop');
-            } else {
-                moodGrid.classList.add('hidden');
-                pollHeader.classList.add('hidden');
-                closedView.classList.remove('hidden');
-                statStatus.innerText = "Ditutup";
-                statStatus.classList.add('text-rose-600');
-                statusIconBg.classList.replace('bg-amber-50', 'bg-rose-50');
-                statusIconBg.classList.replace('text-amber-600', 'text-rose-600');
-                statusIcon.setAttribute('data-lucide', 'lock');
-
-                // Admin Button
-                btnToggle.classList.replace('text-rose-600', 'text-emerald-600');
-                btnToggle.classList.replace('border-rose-100', 'border-emerald-100');
-                btnToggle.classList.replace('hover:bg-rose-600', 'hover:bg-emerald-600');
-                txtToggle.innerText = "Buka Vote";
-                iconToggle.setAttribute('data-lucide', 'play-circle');
-            }
-            lucide.createIcons();
+        function closeDuplicateModal() {
+            document.getElementById('duplicateModal').classList.add('hidden');
         }
 
         function renderMoodCards() {
             const container = document.getElementById('moodGrid');
-            if (!container) return;
             container.innerHTML = MOOD_OPTIONS.map(m => `
                 <button onclick="voteMood('${m.id}')" class="mood-card group flex flex-col items-center justify-center p-8 md:p-10 rounded-[2.5rem] bg-slate-50 border-2 border-slate-100 hover:bg-white hover:border-indigo-500 hover:shadow-2xl transition-all">
                     <span class="text-6xl md:text-7xl mb-6 group-hover:scale-125 transition-transform duration-500">${m.emoji}</span>
@@ -389,270 +358,257 @@
         }
 
         async function voteMood(moodId) {
-            if (!isVoteOpen) return; // Guard against interaction if closed
+            if (checkIfVotedToday()) {
+                openDuplicateModal();
+                return;
+            }
 
             const mood = MOOD_OPTIONS.find(m => m.id === moodId);
             const successOverlay = document.getElementById('successOverlay');
-            const pollingView = document.getElementById('pollingView');
-            const votedView = document.getElementById('votedView');
+            document.querySelectorAll('.mood-card').forEach(b => b.disabled = true);
             
-            successOverlay.style.backgroundColor = `${mood.color}15`; 
             document.getElementById('successEmojiDisplay').innerText = mood.emoji;
             successOverlay.classList.remove('hidden');
+            successOverlay.style.backgroundColor = `${mood.color}15`;
 
             try {
+                localStorage.setItem(todayKey, 'true');
                 fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', 
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'addVote',
-                        moodId: mood.id,
-                        label: mood.label,
-                        timestamp: new Date().toLocaleString('id-ID')
-                    })
+                    method: 'POST', mode: 'no-cors', 
+                    body: JSON.stringify({ action: 'addVote', moodId: mood.id, label: mood.label })
                 });
 
                 setTimeout(() => {
-                    successOverlay.style.opacity = '0';
-                    pollingView.classList.add('fade-out');
-                    
-                    setTimeout(() => {
-                        successOverlay.classList.add('hidden');
-                        successOverlay.style.opacity = '1';
-                        pollingView.classList.add('hidden');
-                        
-                        votedView.style.backgroundColor = mood.color;
-                        votedView.style.boxShadow = `0 25px 50px -12px ${mood.color}60`;
-                        
-                        votedView.classList.remove('hidden');
-                        votedView.classList.add('fade-in');
-                        document.getElementById('votedEmojiDisplay').innerText = mood.emoji;
-                        
-                        refreshData(); 
-                    }, 500);
+                    successOverlay.classList.add('hidden');
+                    document.getElementById('pollingView').classList.add('hidden');
+                    const vView = document.getElementById('votedView');
+                    vView.style.backgroundColor = mood.color;
+                    vView.classList.remove('hidden');
+                    vView.classList.add('fade-in');
+                    document.getElementById('votedEmojiDisplay').innerText = mood.emoji;
+                    refreshData();
                 }, 2000);
-
-            } catch (err) {
-                console.error("Error voting:", err);
-                successOverlay.classList.add('hidden');
+            } catch (err) { 
+                console.error(err);
+                document.querySelectorAll('.mood-card').forEach(b => b.disabled = false);
             }
         }
 
         async function refreshData() {
-            if (!SCRIPT_URL || SCRIPT_URL.includes("MASUKKAN")) return;
+            const indicator = document.getElementById('refreshIndicator');
+            indicator.classList.remove('hidden');
+
             try {
-                const fetchUrl = `${SCRIPT_URL}?action=getStats&t=${new Date().getTime()}`;
-                const response = await fetch(fetchUrl, { method: 'GET', redirect: 'follow' });
-                if (!response.ok) throw new Error('Fetch stats failed');
+                const response = await fetch(`${SCRIPT_URL}?action=getStats&t=${Date.now()}`);
                 const stats = await response.json();
-                lastStatsData = stats;
-                document.getElementById('statTotalVotes').innerText = stats.total || 0;
-                document.getElementById('statLastUpdate').innerText = new Date().toLocaleTimeString('id-ID');
-                updateChart(stats.counts || {});
-            } catch (err) {
-                console.error("Gagal ambil data:", err);
-                updateChart({});
+                
+                currentViewData = stats;
+                localStorage.setItem('mood_stats_cache', JSON.stringify(stats));
+                
+                updateUIWithData();
+                // UPDATED TEXT HERE
+                document.getElementById('lastUpdateText').innerText = "Data Real-time Polling Mingguan";
+            } catch (err) { 
+                console.error("Refresh error:", err); 
+                document.getElementById('lastUpdateText').innerText = "Gagal memuat data terbaru.";
+            } finally {
+                indicator.classList.add('hidden');
             }
+        }
+
+        function updateUIWithData() {
+            updateChart(currentViewData.counts || {});
+            updateRekapTable(currentViewData);
+            updateSummaryCards(currentViewData.counts || {});
+        }
+
+        function updateSummaryCards(counts) {
+            const container = document.getElementById('summaryCards');
+            container.innerHTML = MOOD_OPTIONS.map(m => {
+                const count = counts[m.id] || 0;
+                return `
+                    <div class="bg-slate-50/50 p-4 rounded-3xl text-center border border-slate-100">
+                        <div class="text-2xl mb-1">${m.emoji}</div>
+                        <div class="text-[10px] font-black uppercase text-slate-400 tracking-widest">${m.label}</div>
+                        <div class="text-xl font-black text-slate-900">${count}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateRekapTable(stats) {
+            const tbody = document.getElementById('rekapTableBody');
+            const counts = stats.counts || {};
+            const total = stats.total || 0;
+            document.getElementById('rekapTotalSuara').innerText = total;
+            tbody.innerHTML = MOOD_OPTIONS.map(m => {
+                const count = counts[m.id] || 0;
+                const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+                return `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-8 py-5 flex items-center gap-4">
+                            <span class="text-3xl">${m.emoji}</span>
+                            <div class="text-sm font-black uppercase text-slate-900">${m.label}</div>
+                        </td>
+                        <td class="px-8 py-5 text-center font-black text-xl text-slate-800">${count}</td>
+                        <td class="px-8 py-5 text-right font-bold text-slate-500">${percentage}%</td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function setChartType(type) {
-            if (chartType === type) return;
             chartType = type;
-            const barBtn = document.getElementById('btnChartBar');
-            const pieBtn = document.getElementById('btnChartPie');
-            if (type === 'bar') {
-                barBtn.classList.add('chart-toggle-active');
-                barBtn.classList.remove('text-slate-500');
-                pieBtn.classList.remove('chart-toggle-active');
-                pieBtn.classList.add('text-slate-500');
-            } else {
-                pieBtn.classList.add('chart-toggle-active');
-                pieBtn.classList.remove('text-slate-500');
-                barBtn.classList.remove('chart-toggle-active');
-                barBtn.classList.add('text-slate-500');
-            }
-            updateChart(lastStatsData.counts || {});
+            document.getElementById('btnChartBar').classList.toggle('chart-toggle-active', type === 'bar');
+            document.getElementById('btnChartPie').classList.toggle('chart-toggle-active', type === 'pie');
+            updateChart(currentViewData.counts || {});
         }
 
         function updateChart(counts) {
-            const chartCanvas = document.getElementById('moodChart');
-            if (!chartCanvas) return;
-            const ctx = chartCanvas.getContext('2d');
+            const ctx = document.getElementById('moodChart').getContext('2d');
             const dataValues = MOOD_OPTIONS.map(m => counts[m.id] || 0);
-            const total = dataValues.reduce((a, b) => a + b, 0);
-
             if (chartInstance) chartInstance.destroy();
 
-            const chartConfig = {
+            const total = dataValues.reduce((a, b) => a + b, 0);
+
+            const gradients = MOOD_OPTIONS.map(m => {
+                const grad = ctx.createLinearGradient(0, 0, 0, 400);
+                grad.addColorStop(0, m.gradient[1]);
+                grad.addColorStop(1, m.gradient[0]);
+                return grad;
+            });
+
+            chartInstance = new Chart(ctx, {
                 type: chartType,
                 data: {
                     labels: MOOD_OPTIONS.map(m => m.emoji + ' ' + m.label),
                     datasets: [{
                         data: dataValues,
-                        backgroundColor: MOOD_OPTIONS.map(m => m.color),
-                        borderWidth: chartType === 'pie' ? 6 : 0,
-                        borderColor: '#FFFFFF',
-                        hoverOffset: 30
+                        backgroundColor: gradients,
+                        hoverBackgroundColor: MOOD_OPTIONS.map(m => m.color),
+                        borderRadius: chartType === 'bar' ? 16 : 0,
+                        borderWidth: chartType === 'pie' ? 4 : 0,
+                        borderColor: '#ffffff',
+                        spacing: chartType === 'pie' ? 8 : 0,
+                        hoverOffset: chartType === 'pie' ? 25 : 0
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    layout: { 
-                        padding: chartType === 'pie' ? { top: 20, bottom: 20, left: 20, right: 20 } : 0 
-                    },
-                    plugins: { 
+                    responsive: true, maintainAspectRatio: false,
+                    cutout: chartType === 'pie' ? '65%' : 0,
+                    animation: { duration: 800, easing: 'easeOutQuart' },
+                    plugins: {
                         legend: { 
-                            display: chartType === 'pie',
+                            display: chartType === 'pie', 
                             position: 'bottom',
-                            labels: { 
-                                font: { weight: '800', family: "'Plus Jakarta Sans'", size: 15 },
-                                padding: 40,
+                            labels: {
+                                padding: 25,
                                 usePointStyle: true,
-                                pointStyle: 'circle',
-                                color: '#1e293b'
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: '#0f172a',
-                            titleFont: { weight: 'bold', size: 14 },
-                            bodyFont: { size: 14 },
-                            padding: 18,
-                            cornerRadius: 15,
-                            callbacks: {
-                                label: function(context) {
-                                    const val = context.parsed.y || context.parsed || 0;
-                                    const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
-                                    return ` ${val} Suara (${pct}%)`;
-                                }
+                                font: { family: 'Plus Jakarta Sans', weight: '700', size: 12 }
                             }
                         },
                         datalabels: {
-                            display: function(context) {
-                                return context.dataset.data[context.dataIndex] > 0;
-                            },
-                            color: '#FFFFFF',
-                            font: { weight: '900', size: chartType === 'pie' ? 18 : 12, family: "'Plus Jakarta Sans'" },
-                            formatter: (value, ctx) => {
-                                if (total === 0) return '';
-                                const percentage = ((value / total) * 100).toFixed(0) + '%';
-                                return chartType === 'pie' ? percentage : value;
-                            },
-                            anchor: 'center',
-                            align: 'center',
-                            textShadowColor: 'rgba(0,0,0,0.5)',
-                            textShadowBlur: 8
+                            color: '#1e293b', 
+                            anchor: chartType === 'bar' ? 'end' : 'center',
+                            align: chartType === 'bar' ? 'top' : 'center',
+                            offset: chartType === 'bar' ? 10 : 0,
+                            font: { weight: '800', size: 14, family: 'Plus Jakarta Sans' },
+                            formatter: (value) => {
+                                if (value === 0) return '';
+                                if (chartType === 'pie') return Math.round((value / total) * 100) + '%';
+                                return value;
+                            }
                         }
-                    }
-                }
-            };
-
-            if (chartType === 'bar') {
-                chartConfig.options.scales = {
-                    y: { 
-                        beginAtZero: true, 
-                        grid: { color: '#f1f5f9' },
-                        ticks: { stepSize: 1, color: '#94a3b8', font: { weight: 'bold' } } 
                     },
-                    x: { 
-                        grid: { display: false }, 
-                        ticks: { color: '#64748b', font: { weight: '800', size: 11 } } 
-                    }
-                };
-                chartConfig.data.datasets[0].borderRadius = 25;
-                chartConfig.options.plugins.datalabels.anchor = 'end';
-                chartConfig.options.plugins.datalabels.align = 'top';
-                chartConfig.options.plugins.datalabels.color = '#64748b';
-            } else {
-                chartConfig.options.cutout = '45%'; 
-            }
-
-            chartInstance = new Chart(ctx, chartConfig);
+                    scales: chartType === 'bar' ? {
+                        y: { display: false, beginAtZero: true },
+                        x: { grid: { display: false }, ticks: { font: { family: 'Plus Jakarta Sans', weight: '700' } } }
+                    } : {}
+                }
+            });
         }
 
-        function handleFabClick() {
-            if (!isAdminUnlocked) openPasswordModal();
-            else toggleFabMenu();
+        function switchStatsTab(tab) {
+            const isVisual = tab === 'visual';
+            document.getElementById('tabVisual').classList.toggle('tab-active', isVisual);
+            document.getElementById('tabRekap').classList.toggle('tab-active', !isVisual);
+            document.getElementById('contentVisual').classList.toggle('hidden', !isVisual);
+            document.getElementById('contentRekap').classList.toggle('hidden', isVisual);
         }
 
-        function openPasswordModal() {
-            document.getElementById('passwordModal').classList.remove('hidden');
-            document.getElementById('adminPasswordInput').focus();
-            document.getElementById('passwordError').classList.add('hidden');
-        }
-
-        function closePasswordModal() {
-            document.getElementById('passwordModal').classList.add('hidden');
-            document.getElementById('adminPasswordInput').value = '';
-        }
-
+        function handleFabClick() { if (!isAdminUnlocked) openPasswordModal(); else toggleFabMenu(); }
+        function openPasswordModal() { document.getElementById('passwordModal').classList.remove('hidden'); }
+        function closePasswordModal() { document.getElementById('passwordModal').classList.add('hidden'); }
+        
         function checkAdminPassword() {
-            const input = document.getElementById('adminPasswordInput');
-            if (input.value === "dinamis1902") {
-                isAdminUnlocked = true;
-                closePasswordModal();
+            if (document.getElementById('adminPasswordInput').value === "dinamis1902") {
+                isAdminUnlocked = true; 
+                closePasswordModal(); 
                 unlockAdminUI();
-            } else {
-                document.getElementById('passwordError').classList.remove('hidden');
-                input.value = '';
-                input.focus();
+            } else { 
+                document.getElementById('passwordError').classList.remove('hidden'); 
             }
         }
-
+        
         function unlockAdminUI() {
-            const icon = document.getElementById('fabIcon');
-            const fab = document.getElementById('mainFab');
-            icon.setAttribute('data-lucide', 'settings');
-            fab.classList.replace('bg-slate-950', 'bg-indigo-600');
-            lucide.createIcons();
-            toggleFabMenu(); 
-        }
-
-        function toggleFabMenu() {
-            const menu = document.getElementById('adminFabMenu');
-            isFabMenuOpen = !isFabMenuOpen;
-            menu.classList.toggle('fab-hidden', !isFabMenuOpen);
-            document.getElementById('fabIcon').style.transform = isFabMenuOpen ? 'rotate(90deg)' : 'rotate(0deg)';
-        }
-
-        function lockAdmin() {
-            isAdminUnlocked = false;
-            isFabMenuOpen = false;
-            document.getElementById('adminFabMenu').classList.add('fab-hidden');
-            const icon = document.getElementById('fabIcon');
-            const fab = document.getElementById('mainFab');
-            icon.setAttribute('data-lucide', 'lock');
-            fab.classList.replace('bg-indigo-600', 'bg-slate-950');
-            lucide.createIcons();
-        }
-
-        function openDatabase() {
-            if (SHEET_URL && SHEET_URL.startsWith('http')) {
-                window.open(SHEET_URL, '_blank');
-            } else {
-                alert("URL Database belum dikonfigurasi.");
-            }
+            document.getElementById('fabIcon').setAttribute('data-lucide', 'settings');
+            document.getElementById('mainFab').classList.replace('bg-slate-950', 'bg-indigo-600');
+            lucide.createIcons(); 
             toggleFabMenu();
         }
-
-        function downloadReport() {
-            if (!lastStatsData || lastStatsData.total === 0) {
-                alert("Belum ada data untuk diunduh.");
-                return;
-            }
-            const header = "Kategori,Jumlah,Persentase\n";
-            const rows = MOOD_OPTIONS.map(m => {
-                const count = lastStatsData.counts[m.id] || 0;
-                const pct = ((count / lastStatsData.total) * 100).toFixed(2);
-                return `${m.label},${count},${pct}%`;
-            }).join("\n");
-            const csvContent = "data:text/csv;charset=utf-8," + header + rows;
-            const link = document.createElement("a");
-            link.setAttribute("href", encodeURI(csvContent));
-            link.setAttribute("download", `rekap_bps_${new Date().toLocaleDateString()}.csv`);
-            link.click();
+        
+        function toggleFabMenu() {
+            isFabMenuOpen = !isFabMenuOpen;
+            document.getElementById('adminFabMenu').classList.toggle('fab-hidden', !isFabMenuOpen);
+        }
+        
+        function lockAdmin() { 
+            isAdminUnlocked = false; 
             toggleFabMenu(); 
+            location.reload(); 
+        }
+        
+        function openDatabase() { window.open(SHEET_URL, '_blank'); }
+        
+        function confirmResetData() {
+            if(confirm("Hapus semua data di Spreadsheet?")) {
+                fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'clearVotes' }) })
+                .then(() => {
+                    localStorage.removeItem('mood_stats_cache');
+                    location.reload();
+                });
+            }
+        }
+
+        function downloadRekapData() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+            const counts = currentViewData.counts || {};
+            const total = currentViewData.total || 0;
+
+            let content = `REKAPITULASI MOOD DINAMIS BPS\n`;
+            content += `Tanggal: ${dateStr}\n`;
+            content += `------------------------------------\n\n`;
+            
+            MOOD_OPTIONS.forEach(m => {
+                const count = counts[m.id] || 0;
+                const pct = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+                content += `${m.emoji} ${m.label.padEnd(10)} : ${count} Suara (${pct}%)\n`;
+            });
+
+            content += `\n------------------------------------\n`;
+            content += `TOTAL PARTISIPASI: ${total} Pegawai\n`;
+            content += `------------------------------------`;
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Rekap_Dinamis_${now.toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
         }
     </script>
 </body>
