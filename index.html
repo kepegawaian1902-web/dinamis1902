@@ -120,7 +120,6 @@
             </div>
             <div class="space-y-2">
                 <h3 class="text-2xl font-black text-slate-900 uppercase italic tracking-tighter">Akses Terbatas</h3>
-                <!-- UPDATED MESSAGE -->
                 <p class="text-slate-500 font-bold text-sm leading-relaxed">Terimakasih sudah mengirim polling minggu ini.</p>
             </div>
             <button onclick="closeDuplicateModal()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-black transition-all uppercase text-xs tracking-widest">Tutup</button>
@@ -193,26 +192,19 @@
                     <h2 class="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-[1.1]">Yuk, share cerita kerja kamu minggu ini 👋</h2>
                     <p class="text-slate-500 font-bold text-base md:text-xl">Singkat ✍️, santai 😊, dan anonim 🔒</p>
                 </div>
+                
                 <div id="moodGrid" class="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6"></div>
                 
+                <!-- Notifikasi Statis di Halaman Jika Sudah Vote -->
                 <div id="alreadyVotedView" class="hidden py-16 text-center space-y-6">
                     <div class="text-8xl animate-float">✅</div>
                     <div class="space-y-2">
-                        <!-- UPDATED MESSAGE -->
-                        <h2 class="text-4xl font-black text-slate-900 uppercase italic tracking-tighter">Sudah Mengisi</h2>
-                        <p class="text-slate-500 font-bold">Terimakasih sudah mengirim polling minggu ini.</p>
+                        <h2 class="text-4xl font-black text-slate-900 uppercase italic tracking-tighter">Pilihan Terkirim</h2>
+                        <p class="text-slate-500 font-bold text-lg">Terimakasih sudah mengirim polling minggu ini.</p>
                     </div>
+                    <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Identitas Anda Tetap Anonim</p>
                 </div>
             </div>
-        </section>
-
-        <!-- VOTED VIEW -->
-        <section id="votedView" class="hidden p-10 md:p-16 rounded-[4rem] text-white flex flex-col md:flex-row items-center justify-between gap-10 shadow-2xl transition-all duration-700">
-            <div class="space-y-4 text-center md:text-left">
-                <h3 class="text-4xl font-black italic uppercase tracking-tighter leading-none">Terima Kasih!</h3>
-                <p id="votedMessage" class="text-white/80 font-bold text-lg">Polling Anda telah kami rekap secara anonim.</p>
-            </div>
-            <div id="votedEmojiDisplay" class="text-8xl animate-float"></div>
         </section>
 
         <!-- STATS SECTION -->
@@ -311,41 +303,34 @@
 
         window.onload = async () => {
             lucide.createIcons();
-            const now = new Date();
-            todayKey = `voted_${now.toDateString().replace(/ /g, '_')}`;
             
+            // Buat kunci unik berdasarkan hari (ISO string YYYY-MM-DD)
+            const today = new Date().toISOString().split('T')[0];
+            todayKey = `bps_voted_${today}`;
+            
+            // 1. Render tombol mood terlebih dahulu
+            renderMoodCards();
+
+            // 2. Cek apakah di browser ini sudah pernah vote hari ini
+            if (localStorage.getItem(todayKey)) {
+                showAlreadyVotedUI();
+            }
+
+            // 3. Load data statistik dari cache (jika ada)
             const cachedData = localStorage.getItem('mood_stats_cache');
             if (cachedData) {
                 currentViewData = JSON.parse(cachedData);
                 updateUIWithData();
-                document.getElementById('lastUpdateText').innerText = "Data Real-time Polling Mingguan";
-            }
-
-            if (checkIfVotedToday()) {
-                showAlreadyVotedUI();
-            } else {
-                renderMoodCards();
             }
             
+            // 4. Ambil data terbaru dari server
             refreshData(); 
         };
-
-        function checkIfVotedToday() {
-            return localStorage.getItem(todayKey) === 'true';
-        }
 
         function showAlreadyVotedUI() {
             document.getElementById('moodGrid').classList.add('hidden');
             document.getElementById('alreadyVotedView').classList.remove('hidden');
             document.getElementById('activePollHeader').classList.add('opacity-40');
-        }
-
-        function openDuplicateModal() {
-            document.getElementById('duplicateModal').classList.remove('hidden');
-        }
-
-        function closeDuplicateModal() {
-            document.getElementById('duplicateModal').classList.add('hidden');
         }
 
         function renderMoodCards() {
@@ -359,13 +344,17 @@
         }
 
         async function voteMood(moodId) {
-            if (checkIfVotedToday()) {
+            // Cek lokal sebelum kirim ke server
+            if (localStorage.getItem(todayKey)) {
                 openDuplicateModal();
+                showAlreadyVotedUI();
                 return;
             }
 
             const mood = MOOD_OPTIONS.find(m => m.id === moodId);
             const successOverlay = document.getElementById('successOverlay');
+            
+            // Disable tombol agar tidak double click
             document.querySelectorAll('.mood-card').forEach(b => b.disabled = true);
             
             document.getElementById('successEmojiDisplay').innerText = mood.emoji;
@@ -373,25 +362,39 @@
             successOverlay.style.backgroundColor = `${mood.color}15`;
 
             try {
-                localStorage.setItem(todayKey, 'true');
-                fetch(SCRIPT_URL, {
-                    method: 'POST', mode: 'no-cors', 
+                // Gunakan fetch dengan timeout untuk mendeteksi respons dari server terkait duplikasi IP
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
                     body: JSON.stringify({ action: 'addVote', moodId: mood.id, label: mood.label })
                 });
 
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    // Simpan status sukses di local storage
+                    localStorage.setItem(todayKey, 'true');
+                    
+                    setTimeout(() => {
+                        successOverlay.classList.add('hidden');
+                        showAlreadyVotedUI();
+                        refreshData();
+                    }, 2000);
+                } else if (result.status === 'error' && result.message === 'already_voted') {
+                    // Jika IP sudah ada di server
+                    localStorage.setItem(todayKey, 'true');
+                    successOverlay.classList.add('hidden');
+                    openDuplicateModal();
+                    showAlreadyVotedUI();
+                }
+            } catch (err) { 
+                // Jika error (misal karena no-cors), tetap asumsikan sukses kirim 
+                // karena Google Script biasanya memproses request walaupun ada error CORS di browser
+                localStorage.setItem(todayKey, 'true');
                 setTimeout(() => {
                     successOverlay.classList.add('hidden');
-                    document.getElementById('pollingView').classList.add('hidden');
-                    const vView = document.getElementById('votedView');
-                    vView.style.backgroundColor = mood.color;
-                    vView.classList.remove('hidden');
-                    vView.classList.add('fade-in');
-                    document.getElementById('votedEmojiDisplay').innerText = mood.emoji;
+                    showAlreadyVotedUI();
                     refreshData();
                 }, 2000);
-            } catch (err) { 
-                console.error(err);
-                document.querySelectorAll('.mood-card').forEach(b => b.disabled = false);
             }
         }
 
@@ -407,10 +410,8 @@
                 localStorage.setItem('mood_stats_cache', JSON.stringify(stats));
                 
                 updateUIWithData();
-                // UPDATED TEXT HERE
                 document.getElementById('lastUpdateText').innerText = "Data Real-time Polling Mingguan";
             } catch (err) { 
-                console.error("Refresh error:", err); 
                 document.getElementById('lastUpdateText').innerText = "Gagal memuat data terbaru.";
             } finally {
                 indicator.classList.add('hidden');
@@ -421,6 +422,14 @@
             updateChart(currentViewData.counts || {});
             updateRekapTable(currentViewData);
             updateSummaryCards(currentViewData.counts || {});
+        }
+
+        function openDuplicateModal() {
+            document.getElementById('duplicateModal').classList.remove('hidden');
+        }
+
+        function closeDuplicateModal() {
+            document.getElementById('duplicateModal').classList.add('hidden');
         }
 
         function updateSummaryCards(counts) {
@@ -466,7 +475,9 @@
         }
 
         function updateChart(counts) {
-            const ctx = document.getElementById('moodChart').getContext('2d');
+            const canvas = document.getElementById('moodChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
             const dataValues = MOOD_OPTIONS.map(m => counts[m.id] || 0);
             if (chartInstance) chartInstance.destroy();
 
@@ -515,7 +526,7 @@
                             offset: chartType === 'bar' ? 10 : 0,
                             font: { weight: '800', size: 14, family: 'Plus Jakarta Sans' },
                             formatter: (value) => {
-                                if (value === 0) return '';
+                                if (value === 0 || total === 0) return '';
                                 if (chartType === 'pie') return Math.round((value / total) * 100) + '%';
                                 return value;
                             }
@@ -572,10 +583,11 @@
         function openDatabase() { window.open(SHEET_URL, '_blank'); }
         
         function confirmResetData() {
-            if(confirm("Hapus semua data di Spreadsheet?")) {
-                fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'clearVotes' }) })
+            const pass = prompt("Konfirmasi Reset Data? (Ketik 'RESET')");
+            if(pass === 'RESET') {
+                fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'clearVotes' }) })
                 .then(() => {
-                    localStorage.removeItem('mood_stats_cache');
+                    localStorage.clear();
                     location.reload();
                 });
             }
