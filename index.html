@@ -120,7 +120,8 @@
             </div>
             <div class="space-y-2">
                 <h3 class="text-2xl font-black text-slate-900 uppercase italic tracking-tighter">Akses Terbatas</h3>
-                <p class="text-slate-500 font-bold text-sm leading-relaxed">Sistem mendeteksi Anda sudah berpartisipasi hari ini. Sampai jumpa di polling berikutnya!</p>
+                <!-- UPDATED MESSAGE -->
+                <p class="text-slate-500 font-bold text-sm leading-relaxed">Terimakasih sudah mengirim polling minggu ini.</p>
             </div>
             <button onclick="closeDuplicateModal()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-black transition-all uppercase text-xs tracking-widest">Tutup</button>
         </div>
@@ -197,8 +198,9 @@
                 <div id="alreadyVotedView" class="hidden py-16 text-center space-y-6">
                     <div class="text-8xl animate-float">✅</div>
                     <div class="space-y-2">
-                        <h2 class="text-4xl font-black text-slate-900 uppercase italic tracking-tighter">Sudah Mengisi Hari Ini</h2>
-                        <p class="text-slate-500 font-bold">Terima kasih! Anda sudah mengirimkan polling untuk hari ini.<br>Silakan kembali lagi besok pagi.</p>
+                        <!-- UPDATED MESSAGE -->
+                        <h2 class="text-4xl font-black text-slate-900 uppercase italic tracking-tighter">Sudah Mengisi</h2>
+                        <p class="text-slate-500 font-bold">Terimakasih sudah mengirim polling minggu ini.</p>
                     </div>
                 </div>
             </div>
@@ -222,7 +224,6 @@
                         <h2 class="text-3xl font-black text-slate-900 tracking-tight">Hasil Rekapitulasi</h2>
                         <div class="flex items-center gap-2 mt-1">
                             <div id="refreshIndicator" class="hidden loader"></div>
-                            <!-- UPDATED TEXT HERE -->
                             <p id="lastUpdateText" class="text-sm font-bold text-slate-400 italic">Memuat data...</p>
                         </div>
                     </div>
